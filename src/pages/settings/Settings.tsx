@@ -88,7 +88,7 @@ export default function Settings() {
       <div className="mt-8 flex flex-col items-center gap-1 text-xs text-ink-muted">
         <LogoMark size={28} />
         <p className="font-serif text-sm italic">Good Cigars. Better Company.</p>
-        <p>Daily Stogie v0.1 · 21+ only</p>
+        <p>Daily Stogie v0.1 · build {__BUILD_ID__} · 21+ only</p>
         <Link to="/admin" className="mt-2 underline">Admin panel (demo)</Link>
       </div>
     </div>

@@ -3,8 +3,21 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
 import path from 'node:path'
+import { execSync } from 'node:child_process'
+
+// Build id shown in the app: Vercel's commit sha, else local git, else a timestamp.
+function buildId() {
+  const sha = process.env.VERCEL_GIT_COMMIT_SHA
+  if (sha) return sha.slice(0, 7)
+  try {
+    return execSync('git rev-parse --short HEAD', { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim()
+  } catch {
+    return new Date().toISOString().slice(0, 16)
+  }
+}
 
 export default defineConfig({
+  define: { __BUILD_ID__: JSON.stringify(buildId()) },
   plugins: [
     react(),
     tailwindcss(),
@@ -12,6 +25,7 @@ export default defineConfig({
     // open from the device cache, so repeat launches don't wait on the network.
     VitePWA({
       registerType: 'autoUpdate',
+      injectRegister: false, // registered in src/lib/pwa.ts so updates reload the page
       includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
       manifest: {
         name: 'Daily Stogie',
@@ -34,6 +48,8 @@ export default defineConfig({
         navigateFallback: '/index.html',
         navigateFallbackDenylist: [/^\/assets\//],
         cleanupOutdatedCaches: true,
+        skipWaiting: true,
+        clientsClaim: true,
         runtimeCaching: [
           {
             // Map tiles: reuse ones already seen, keep the cache bounded.

@@ -78,6 +78,7 @@ export default function Welcome() {
             Log In
           </Button>
           <AgeNote light className="pt-3" />
+          <p className="text-center text-[10px] text-white/35">Version {__BUILD_ID__}</p>
         </motion.div>
       </div>
     </div>

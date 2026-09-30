@@ -13,6 +13,8 @@ import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import App from './App'
 import { ErrorBoundary } from './components/ErrorBoundary'
+import { ErrorReporter } from './components/ErrorReporter'
+import { setupPwa } from './lib/pwa'
 import { AppProvider } from './lib/store'
 import { CommunityProvider } from './features/community/store'
 
@@ -29,6 +31,7 @@ createRoot(document.getElementById('root')!).render(
         <BrowserRouter>
           <MotionConfig reducedMotion="user">
             <App />
+            <ErrorReporter />
           </MotionConfig>
         </BrowserRouter>
         </CommunityProvider>
@@ -37,3 +40,5 @@ createRoot(document.getElementById('root')!).render(
     </ErrorBoundary>
   </StrictMode>,
 )
+
+if (import.meta.env.PROD) setupPwa()

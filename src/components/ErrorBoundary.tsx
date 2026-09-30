@@ -40,6 +40,7 @@ export class ErrorBoundary extends Component<{ children: ReactNode }, { error: u
       <div className="flex min-h-dvh flex-col items-center justify-center bg-bg px-8 text-center text-ink">
         <p className="font-serif text-3xl">Something went wrong</p>
         <p className="mt-2 max-w-72 text-sm text-ink-muted">Sorry about that. Reloading usually fixes it.</p>
+        <p className="mt-3 max-w-80 break-words font-mono text-[11px] text-ink-muted">{String((this.state.error as Error)?.message ?? this.state.error)} · build {__BUILD_ID__}</p>
         <div className="mt-6 flex gap-3">
           <button onClick={() => location.reload()} className="btn-gold min-h-11 rounded-[14px] px-5 font-semibold">Reload</button>
           <button onClick={() => (location.href = '/')} className="min-h-11 rounded-[14px] border border-line-strong px-5 font-semibold">Home</button>
