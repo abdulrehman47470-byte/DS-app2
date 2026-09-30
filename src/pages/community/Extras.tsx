@@ -9,7 +9,10 @@ import { LOUNGES } from '@/data/mock/content'
 import { MEMBERS } from '@/data/mock/members'
 import { PREF_SECTIONS } from '@/data/options'
 import { useCommunity } from '@/features/community/store'
-import { NOTIFICATION_TYPES } from '@/features/community/types'
+import { NOTIFICATION_TYPES, type CommunityPairing } from '@/features/community/types'
+import { EngagementBar, useAuthor } from '@/features/community/PostCard'
+import { checkContent } from '@/features/community/moderation'
+import { Textarea } from '@/components/ui'
 import { scoreMember } from '@/lib/api'
 import { cn } from '@/lib/cn'
 import { useApp } from '@/lib/store'
@@ -117,9 +120,74 @@ export function PairingFinder() {
           </ol>
           <p className="border-t border-line px-4 py-3 text-sm text-ink-muted">{guide.why} {wrapperNote}</p>
         </section>
+        <CommunityPairings strength={strength} />
         <p className="text-center text-xs text-ink-muted">Enjoy responsibly. 21+ only.</p>
       </div>
     </div>
+  )
+}
+
+function CommunityPairings({ strength }: { strength: string }) {
+  const { c, setC } = useCommunity()
+  const { toast } = useApp()
+  const author = useAuthor()
+  const [onlyThis, setOnlyThis] = useState(false)
+  const [add, setAdd] = useState(false)
+  const [f, setF] = useState({ cigar: '', drink: '', note: '', strength })
+  const [error, setError] = useState<string>()
+  const score = (p: CommunityPairing) => Object.values(p.reactions).reduce((n, x) => n + (x ?? 0), 0)
+  const list = c.pairings.filter((p) => !onlyThis || p.strength === strength).sort((a, b) => score(b) - score(a))
+  return (
+    <section className="pt-2">
+      <div className="mb-2 flex items-center justify-between">
+        <h2 className="font-serif text-xl">From the community</h2>
+        <Button size="sm" onClick={() => setAdd(true)}>Share yours</Button>
+      </div>
+      <div className="mb-3 flex gap-2">
+        <Chip selected={!onlyThis} onClick={() => setOnlyThis(false)}>Top pairings</Chip>
+        <Chip selected={onlyThis} onClick={() => setOnlyThis(true)}>{strength} only</Chip>
+      </div>
+      <div className="space-y-3">
+        {list.map((p) => {
+          const a = author(p.authorId)
+          return (
+            <article key={p.id} className="card p-4">
+              <div className="flex items-center gap-2.5">
+                <Avatar tone={a.tone} name={a.name} src={a.src} size={34} />
+                <p className="min-w-0 flex-1 text-sm"><strong>{a.name}</strong> <span className="text-ink-muted">· {p.at}</span></p>
+                <Badge tone="muted">{p.strength}</Badge>
+              </div>
+              <p className="mt-3 font-serif text-lg leading-tight">{p.cigar} <span className="text-gold-ink">+</span> {p.drink}</p>
+              {p.note && <p className="mt-1 text-sm text-ink-muted">“{p.note}”</p>}
+              <div className="mt-3"><EngagementBar compact itemId={p.id} reactions={p.reactions} reactors={p.reactors} shareLink={`${location.origin}/pairing#${p.id}`} /></div>
+            </article>
+          )
+        })}
+        {list.length === 0 && <p className="rounded-2xl bg-surface-2 p-4 text-center text-sm text-ink-muted">No {strength.toLowerCase()} pairings yet. Share the first one!</p>}
+      </div>
+      <Sheet open={add} onClose={() => setAdd(false)} title="Share a pairing" footer={
+        <>
+          {error && <p className="mb-2 text-sm text-danger">{error}</p>}
+          <Button block disabled={!f.cigar.trim() || !f.drink.trim()} onClick={() => {
+            const blocked = checkContent(`${f.cigar} ${f.drink} ${f.note}`)
+            if (blocked) return setError(blocked)
+            const p: CommunityPairing = { id: `pr${Date.now()}`, authorId: 'me', cigar: f.cigar.trim(), drink: f.drink.trim(), note: f.note.trim(), strength: f.strength, at: 'now', reactions: {}, reactors: [] }
+            setC((s) => ({ pairings: [p, ...s.pairings] }))
+            toast('Pairing shared')
+            setF({ cigar: '', drink: '', note: '', strength })
+            setError(undefined)
+            setAdd(false)
+          }}>Share pairing</Button>
+        </>
+      }>
+        <div className="space-y-4 pb-2">
+          <Field label="Cigar" htmlFor="p-cigar"><Input id="p-cigar" value={f.cigar} maxLength={80} onChange={(e) => setF({ ...f, cigar: e.target.value })} placeholder="e.g. Padrón 1964 Maduro" /></Field>
+          <Field label="Drink" htmlFor="p-drink"><Input id="p-drink" value={f.drink} maxLength={60} onChange={(e) => setF({ ...f, drink: e.target.value })} placeholder="e.g. Aged rum" /></Field>
+          <Field label="Strength" htmlFor="p-str"><Select id="p-str" value={f.strength} onChange={(e) => setF({ ...f, strength: e.target.value })}>{Object.keys(PAIRING_GUIDE).map((x) => <option key={x}>{x}</option>)}</Select></Field>
+          <Field label="Why it works" htmlFor="p-note" optional><Textarea id="p-note" value={f.note} maxLength={280} onChange={(e) => setF({ ...f, note: e.target.value })} /></Field>
+        </div>
+      </Sheet>
+    </section>
   )
 }
 
@@ -185,6 +253,23 @@ export function usePassport() {
 
 export function Passport() {
   const { lounges, states, badges } = usePassport()
+  const { setC, on } = useCommunity()
+  const { state, toast } = useApp()
+  const nav = useNavigate()
+  const shareToFeed = () => {
+    setC((s) => ({
+      posts: [
+        {
+          id: `p${Date.now()}`, authorId: 'me', type: 'update', topic: 'Lounges', photos: [], at: 'now', metro: state.demographics.city,
+          text: `My Cigar Passport: ${lounges.length} ${lounges.length === 1 ? 'lounge' : 'lounges'} across ${states.length} ${states.length === 1 ? 'state' : 'states'}${badges.filter((b) => b.earned).length ? `, badges: ${badges.filter((b) => b.earned).map((b) => b.label).join(', ')}` : ''}. Where should I go next?`,
+          reactions: {}, reactors: [], comments: [],
+        },
+        ...s.posts,
+      ],
+    }))
+    toast('Shared to the Lounge Feed')
+    nav('/discover?view=feed')
+  }
   return (
     <div className="flex flex-1 flex-col pb-6">
       <TopBar back title="Cigar Passport" />
@@ -199,6 +284,7 @@ export function Passport() {
             <div><p className="font-serif text-3xl">{badges.filter((b) => b.earned).length}</p><p className="text-xs text-white/70">Badges</p></div>
           </div>
         </div>
+        {on('community_feed') && <Button variant="secondary" block className="mt-3" onClick={shareToFeed}>Share my passport to the feed</Button>}
         <h2 className="micro-label mb-2 mt-6">Badges</h2>
         <div className="grid grid-cols-2 gap-3">
           {badges.map((b) => (

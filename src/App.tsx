@@ -15,7 +15,8 @@ import Screens, { States } from '@/pages/Screens'
 import { EventDetail, Events } from '@/pages/community/Events'
 import { NearbyMap, Notifications, PairingFinder, Passport, TravelMode } from '@/pages/community/Extras'
 import Journal from '@/pages/community/Journal'
-import { Blog, BlogPost, SessionDetail, Sessions } from '@/pages/settings/Content'
+import { Blog, BlogEditor, BlogPost } from '@/pages/settings/Blog'
+import { SessionDetail, Sessions } from '@/pages/settings/Sessions'
 import Legal from '@/pages/settings/Legal'
 import Settings, { DeleteAccount, Refer } from '@/pages/settings/Settings'
 import StogieSearch from '@/pages/settings/StogieSearch'
@@ -56,6 +57,8 @@ export default function App() {
           <Route path="/settings/sessions" element={<Sessions />} />
           <Route path="/settings/sessions/:id" element={<SessionDetail />} />
           <Route path="/settings/blog" element={<Blog />} />
+          <Route path="/settings/blog/write" element={<BlogEditor />} />
+          <Route path="/settings/blog/edit/:id" element={<BlogEditor />} />
           <Route path="/settings/blog/:slug" element={<BlogPost />} />
           <Route path="/settings/refer" element={<Refer />} />
           <Route path="/settings/delete" element={<DeleteAccount />} />

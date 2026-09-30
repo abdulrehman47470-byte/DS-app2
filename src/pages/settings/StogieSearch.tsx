@@ -9,7 +9,9 @@ import { useSearchParams } from 'react-router-dom'
 import { LoungeMap, milesBetween } from '@/components/LoungeMap'
 import { Badge, Button, Chip, EmptyState, ErrorState, Field, Input, ListSkeleton, Segmented, Select, Sheet, Textarea, TopBar } from '@/components/ui'
 import { PREF_SECTIONS } from '@/data/options'
-import { Bands } from '@/features/community/PostCard'
+import { Bands, EngagementBar, useAuthor } from '@/features/community/PostCard'
+import { Avatar } from '@/components/brand'
+import type { LoungeReview } from '@/features/community/types'
 import { BandRating } from '@/features/community/SmokeReportForm'
 import { useCommunity } from '@/features/community/store'
 import { getLounges } from '@/lib/api'
@@ -99,10 +101,11 @@ export default function StogieSearch() {
   }
 
   const rating = (l: Lounge) => {
-    const mine = c.reviews[l.id]
+    const rs = c.loungeReviews.filter((r) => r.loungeId === l.id)
     const base = mockRating(l.id)
-    return mine ? (base * 12 + mine.rating) / 13 : base
+    return rs.length ? (base * 8 + rs.reduce((n, r) => n + r.rating, 0)) / (8 + rs.length) : base
   }
+  const reviewCount = (id: string) => 8 + c.loungeReviews.filter((r) => r.loungeId === id).length
 
   const directions = (l: Lounge) => {
     const addr = encodeURIComponent(`${l.street}, ${l.city}, ${l.state} ${l.zip}`)
@@ -235,7 +238,7 @@ export default function StogieSearch() {
                 <span className="font-serif text-3xl">{rating(open).toFixed(1)}</span>
                 <div>
                   <Bands value={Math.round(rating(open))} size={14} />
-                  <p className="mt-0.5 text-xs text-ink-muted">{12 + (c.reviews[open.id] ? 1 : 0)} member reviews</p>
+                  <p className="mt-0.5 text-xs text-ink-muted">{reviewCount(open.id)} member reviews</p>
                 </div>
               </div>
             )}
@@ -262,7 +265,12 @@ export default function StogieSearch() {
               }}>Share</Button>
               {on('lounge_checkins') && <Button variant="secondary" icon={CheckCircle2} onClick={() => setSheet('checkin')}>I’m here</Button>}
             </div>
-            {on('lounge_reviews') && <Button variant="secondary" block icon={Star} onClick={() => setSheet('review')}>{c.reviews[open.id] ? 'Edit your review' : 'Write a review'}</Button>}
+            {on('lounge_reviews') && (
+              <>
+                <Button variant="secondary" block icon={Star} onClick={() => setSheet('review')}>{c.loungeReviews.some((r) => r.loungeId === open.id && r.authorId === 'me') ? 'Edit your review' : 'Write a review'}</Button>
+                <ReviewList loungeId={open.id} />
+              </>
+            )}
             <Button variant="ghost" block icon={Pencil} onClick={() => setSheet('correct')}>Suggest a correction</Button>
             <p className="text-center text-xs text-ink-muted">Locator only. Daily Stogie does not sell tobacco.</p>
           </div>
@@ -296,7 +304,9 @@ function CorrectionSheet({ open, onClose }: { open: boolean; onClose: () => void
 function ReviewSheet({ open, loungeId, onClose }: { open: boolean; loungeId: string; onClose: () => void }) {
   const { c, setC } = useCommunity()
   const { toast } = useApp()
-  const existing = c.reviews[loungeId]
+  const existing = c.loungeReviews.find((r) => r.loungeId === loungeId && r.authorId === 'me')
+  const [photo, setPhoto] = useState(existing?.photo)
+  const photoRef = useRef<HTMLInputElement>(null)
   const [rating, setRating] = useState(existing?.rating ?? 0)
   const [tags, setTags] = useState<string[]>(existing?.tags ?? [])
   const [menu, setMenu] = useState(existing?.pairingMenu ?? 0)
@@ -308,8 +318,9 @@ function ReviewSheet({ open, loungeId, onClose }: { open: boolean; loungeId: str
       title="Review this lounge"
       footer={
         <Button block disabled={!rating} onClick={() => {
-          setC((s) => ({ reviews: { ...s.reviews, [loungeId]: { rating, tags, pairingMenu: menu, tips } } }))
-          toast('Review submitted for moderation')
+          const review: LoungeReview = { id: existing?.id ?? `r${Date.now()}`, loungeId, authorId: 'me', rating, tags, pairingMenu: menu, tips: tips.trim(), photo, at: 'now', reactions: existing?.reactions ?? {}, reactors: existing?.reactors ?? [] }
+          setC((s) => ({ loungeReviews: existing ? s.loungeReviews.map((r) => (r.id === existing.id ? review : r)) : [review, ...s.loungeReviews] }))
+          toast('Review posted. Thanks for helping the community!')
           onClose()
         }}>Submit review</Button>
       }
@@ -321,6 +332,19 @@ function ReviewSheet({ open, loungeId, onClose }: { open: boolean; loungeId: str
           <div className="flex flex-wrap gap-2">{ATMOSPHERE.map((a) => <Chip key={a} size="sm" selected={tags.includes(a)} onClick={() => setTags(tags.includes(a) ? tags.filter((x) => x !== a) : [...tags, a])}>{a}</Chip>)}</div>
         </div>
         <div><p className="mb-2 text-sm font-semibold">Pairing menu quality</p><BandRating label="Pairing menu" value={menu} onChange={setMenu} /></div>
+        <div>
+          <p className="mb-2 text-sm font-semibold">Photo <span className="font-normal text-ink-muted">(optional)</span></p>
+          {photo ? (
+            <div className="relative h-36 overflow-hidden rounded-2xl"><img src={photo} alt="" className="size-full object-cover" /><button onClick={() => setPhoto(undefined)} className="absolute right-2 top-2 rounded-full bg-black/60 px-2.5 py-1 text-xs font-semibold text-white">Remove</button></div>
+          ) : (
+            <Button variant="secondary" block onClick={() => photoRef.current?.click()}>Add a photo of the lounge</Button>
+          )}
+          <input ref={photoRef} type="file" accept="image/*" className="hidden" onChange={async (e) => {
+            const f = e.target.files?.[0]
+            e.target.value = ''
+            if (f && f.type.startsWith('image/')) setPhoto(await shrinkImage(f))
+          }} />
+        </div>
         <Field label="Tips for other members" htmlFor="tips" optional><Textarea id="tips" value={tips} onChange={(e) => setTips(e.target.value)} maxLength={500} placeholder="Best seats, when it’s quiet, staff picks…" /></Field>
         <p className="text-xs text-ink-muted">One review per member per lounge. Reviews are moderated.</p>
       </div>
@@ -363,5 +387,55 @@ function CheckinSheet({ open, lounge, onClose }: { open: boolean; lounge: Lounge
         <p className="text-center text-xs text-ink-muted">Verified check-ins (within ~300 m) earn Cigar Passport stamps.</p>
       </div>
     </Sheet>
+  )
+}
+
+function shrinkImage(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    img.onload = () => {
+      const k = Math.min(1, 1000 / Math.max(img.width, img.height))
+      const cv = document.createElement('canvas')
+      cv.width = img.width * k
+      cv.height = img.height * k
+      cv.getContext('2d')!.drawImage(img, 0, 0, cv.width, cv.height)
+      resolve(cv.toDataURL('image/jpeg', 0.8))
+      URL.revokeObjectURL(img.src)
+    }
+    img.onerror = reject
+    img.src = URL.createObjectURL(file)
+  })
+}
+
+function ReviewList({ loungeId }: { loungeId: string }) {
+  const { c } = useCommunity()
+  const author = useAuthor()
+  const list = c.loungeReviews.filter((r) => r.loungeId === loungeId)
+  if (!list.length) return <p className="rounded-2xl bg-surface-2 p-3 text-center text-sm text-ink-muted">No member reviews yet. Be the first!</p>
+  return (
+    <section>
+      <h3 className="micro-label mb-2">Member reviews</h3>
+      <div className="space-y-3">
+        {list.map((r) => {
+          const a = author(r.authorId)
+          return (
+            <article key={r.id} className="rounded-2xl border border-line bg-surface p-3">
+              <div className="flex items-center gap-2.5">
+                <Avatar tone={a.tone} name={a.name} src={a.src} size={34} />
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold">{a.name}</p>
+                  <p className="text-[11px] text-ink-muted">{a.userType} · {r.at}</p>
+                </div>
+                <Bands value={r.rating} size={10} />
+              </div>
+              {r.tips && <p className="mt-2 text-sm">{r.tips}</p>}
+              {r.photo && <img src={r.photo} alt="" className="mt-2 h-36 w-full rounded-xl object-cover" />}
+              {r.tags.length > 0 && <div className="mt-2 flex flex-wrap gap-1.5">{r.tags.map((t) => <Chip key={t} size="sm">{t}</Chip>)}</div>}
+              <div className="mt-2"><EngagementBar compact itemId={r.id} reactions={r.reactions} reactors={r.reactors} shareLink={`${location.origin}/settings/search?lounge=${loungeId}`} /></div>
+            </article>
+          )
+        })}
+      </div>
+    </section>
   )
 }

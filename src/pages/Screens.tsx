@@ -17,7 +17,7 @@ const GROUPS: [string, [string, string][]][] = [
   ['Settings', [
     ['Settings menu', '/settings'], ['Subscription', '/settings/subscription'], ['Stogie Search', '/settings/search'],
     ['Stogie Sessions', '/settings/sessions'], ['Session video', '/settings/sessions/s1'], ['Stogie Blog', '/settings/blog'],
-    ['Blog article', '/settings/blog/perfect-cigar-pairing'], ['Privacy Policy', '/legal/privacy'], ['Terms', '/legal/terms'],
+    ['Blog article (editorial)', '/settings/blog/perfect-cigar-pairing'], ['Blog article (member)', '/settings/blog/three-years-in-the-cabinet'], ['Write an article', '/settings/blog/write'], ['Member video', '/settings/sessions/v1'], ['Privacy Policy', '/legal/privacy'], ['Terms', '/legal/terms'],
     ['Stogie Ethics (full)', '/legal/ethics'], ['Indemnification', '/legal/indemnification'], ['Refer a Friend', '/settings/refer'],
     ['Export / delete account', '/settings/delete'],
   ]],

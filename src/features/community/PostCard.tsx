@@ -21,6 +21,8 @@ import { REACTIONS, type Comment, type Post, type ReactionKey, type SmokeReport 
 export function useAuthor() {
   const { state } = useApp()
   return (id: string) => {
+    if (id === 'staff')
+      return { id: 'staff', name: 'Daily Stogie Editorial', first: 'Daily Stogie', tone: 32, userType: 'Editorial', place: 'Staff', src: null as string | null }
     if (id === 'me')
       return { id: 'me', name: state.demographics.name, first: state.demographics.name.split(' ')[0], tone: 30, userType: state.demographics.userType, place: `${state.demographics.city}, ${state.demographics.state}`, src: state.photo }
     const m = MEMBERS.find((x) => x.id === id)!
@@ -294,7 +296,7 @@ export function PostCard({ post, onOpenComments }: { post: Post; onOpenComments:
         <ActionBtn onClick={() => setShare(true)}><Share2 size={17} /> Share</ActionBtn>
       </div>
 
-      <WhoReactedSheet open={who} onClose={() => setWho(false)} post={post} counts={counts} />
+      <WhoReactedSheet open={who} onClose={() => setWho(false)} reactors={post.reactors} counts={counts} />
       <ShareSheet open={share} onClose={() => setShare(false)} postId={post.id} />
       <ReportSheet open={report} onClose={() => setReport(false)} name={`${author.first}'s post`} />
     </article>
@@ -317,7 +319,7 @@ function ActionBtn({ children, onClick, active }: { children: ReactNode; onClick
   )
 }
 
-function WhoReactedSheet({ open, onClose, post, counts }: { open: boolean; onClose: () => void; post: Post; counts: Partial<Record<ReactionKey, number>> }) {
+function WhoReactedSheet({ open, onClose, reactors, counts }: { open: boolean; onClose: () => void; reactors: string[]; counts: Partial<Record<ReactionKey, number>> }) {
   const author = useAuthor()
   return (
     <Sheet open={open} onClose={onClose} title="Reactions">
@@ -327,7 +329,7 @@ function WhoReactedSheet({ open, onClose, post, counts }: { open: boolean; onClo
         ))}
       </div>
       <ul className="divide-y divide-line pb-4">
-        {post.reactors.map((id, i) => {
+        {reactors.map((id, i) => {
           const a = author(id)
           return (
             <li key={id} className="flex items-center gap-3 py-2.5">
@@ -342,12 +344,12 @@ function WhoReactedSheet({ open, onClose, post, counts }: { open: boolean; onClo
   )
 }
 
-function ShareSheet({ open, onClose, postId }: { open: boolean; onClose: () => void; postId: string }) {
+function ShareSheet({ open, onClose, postId, link: linkProp }: { open: boolean; onClose: () => void; postId?: string; link?: string }) {
   const { state, toast } = useApp()
   const nav = useNavigate()
-  const link = `${location.origin}/discover?view=feed&post=${postId}`
+  const link = linkProp ?? `${location.origin}/discover?view=feed&post=${postId}`
   return (
-    <Sheet open={open} onClose={onClose} title="Share post">
+    <Sheet open={open} onClose={onClose} title="Share">
       <Button block variant="secondary" icon={Copy} onClick={() => { navigator.clipboard?.writeText(link).catch(() => {}); toast('Link copied'); onClose() }}>Copy link</Button>
       <p className="micro-label mb-2 mt-5">Send to a match</p>
       <ul className="divide-y divide-line pb-4">
@@ -370,6 +372,46 @@ function ShareSheet({ open, onClose, postId }: { open: boolean; onClose: () => v
 /* ---------------- Comments ---------------- */
 export function CommentsSheet({ post, onClose }: { post: Post | null; onClose: () => void }) {
   const { c, setC } = useCommunity()
+  const live = post ? c.posts.find((p) => p.id === post.id) ?? post : null
+  return (
+    <ThreadSheet
+      open={!!post}
+      onClose={onClose}
+      comments={live?.comments ?? []}
+      update={(fn) => live && setC((s) => ({ posts: s.posts.map((p) => (p.id === live.id ? { ...p, comments: fn(p.comments) } : p)) }))}
+    />
+  )
+}
+
+/** Comments for any non-feed item (article, video, event, pairing, review), stored in c.threads. */
+export function ItemThread({ itemId, open, onClose, title }: { itemId: string; open: boolean; onClose: () => void; title?: string }) {
+  const { c, setC } = useCommunity()
+  return (
+    <ThreadSheet
+      open={open}
+      onClose={onClose}
+      title={title}
+      comments={c.threads[itemId] ?? []}
+      update={(fn) => setC((s) => ({ threads: { ...s.threads, [itemId]: fn(s.threads[itemId] ?? []) } }))}
+    />
+  )
+}
+
+export const threadCount = (cs: Comment[] | undefined) => (cs ?? []).reduce((a, x) => a + 1 + x.replies.length, 0)
+
+export function ThreadSheet({
+  open,
+  onClose,
+  comments: source,
+  update,
+  title = 'Comments',
+}: {
+  open: boolean
+  onClose: () => void
+  comments: Comment[]
+  update: (fn: (cs: Comment[]) => Comment[]) => void
+  title?: string
+}) {
   const { toast } = useApp()
   const author = useAuthor()
   const { mine, react } = useReact()
@@ -379,21 +421,16 @@ export function CommentsSheet({ post, onClose }: { post: Post | null; onClose: (
   const [sort, setSort] = useState<'top' | 'newest'>('top')
   const [pickerFor, setPickerFor] = useState<string | null>(null)
   const [report, setReport] = useState<string | null>(null)
-  const live = post ? c.posts.find((p) => p.id === post.id) ?? post : null
-
   const mention = text.match(/@([A-Za-z]*)$/)
   const mentionOptions = useMemo(
     () => (mention ? MEMBERS.filter((m) => m.firstName.toLowerCase().startsWith(mention[1].toLowerCase())).slice(0, 4) : []),
     [mention],
   )
 
-  if (!live) return <Sheet open={false} onClose={onClose} title="">{null}</Sheet>
-
   const score = (x: Comment) => Object.values(countWith(x.reactions, mine[x.id])).reduce((a, b) => a + (b ?? 0), 0)
-  const comments = sort === 'top' ? [...live.comments].sort((a, b) => score(b) - score(a)) : [...live.comments].reverse()
+  const comments = sort === 'top' ? [...source].sort((a, b) => score(b) - score(a)) : [...source].reverse()
 
-  const updateComments = (fn: (cs: Comment[]) => Comment[]) =>
-    setC((s) => ({ posts: s.posts.map((p) => (p.id === live.id ? { ...p, comments: fn(p.comments) } : p)) }))
+  const updateComments = update
 
   const submit = () => {
     const t = text.trim()
@@ -451,9 +488,9 @@ export function CommentsSheet({ post, onClose }: { post: Post | null; onClose: (
 
   return (
     <Sheet
-      open={!!post}
+      open={open}
       onClose={onClose}
-      title="Comments"
+      title={title}
       footer={
         <div>
           {mentionOptions.length > 0 && (
@@ -491,3 +528,99 @@ export function CommentsSheet({ post, onClose }: { post: Post | null; onClose: (
   )
 }
 
+
+/** React / Comment / Save / Share for any content item (articles, videos, events, pairings, reviews). */
+export function EngagementBar({
+  itemId,
+  reactions,
+  reactors,
+  shareLink,
+  compact,
+  onComments,
+}: {
+  itemId: string
+  reactions: Partial<Record<ReactionKey, number>>
+  reactors: string[]
+  shareLink: string
+  compact?: boolean
+  onComments?: () => void
+}) {
+  const { c, setC } = useCommunity()
+  const { toast } = useApp()
+  const { mine, react, burst } = useReact()
+  const [picker, setPicker] = useState(false)
+  const [who, setWho] = useState(false)
+  const [share, setShare] = useState(false)
+  const [thread, setThread] = useState(false)
+  const counts = countWith(reactions, mine[itemId])
+  const my = REACTIONS.find((r) => r.key === mine[itemId])
+  const saved = c.saved.includes(itemId)
+  const n = threadCount(c.threads[itemId])
+  const openComments = onComments ?? (() => setThread(true))
+  return (
+    <div>
+      <div className="flex items-center justify-between">
+        <ReactionSummary counts={counts} onClick={() => setWho(true)} />
+        {n > 0 && <button onClick={openComments} className="text-[13px] text-ink-muted hover:underline">{n} {n === 1 ? 'comment' : 'comments'}</button>}
+      </div>
+      <div className={cn('relative mt-2 grid border-t border-line pt-1.5', compact ? 'grid-cols-3' : 'grid-cols-4')}>
+        <div className="relative">
+          <AnimatePresence>{picker && <ReactionPicker current={mine[itemId]} onPick={(k) => { react(itemId, k); setPicker(false) }} />}</AnimatePresence>
+          <AnimatePresence>
+            {burst === itemId && my && (
+              <motion.span initial={{ y: 0, opacity: 1, scale: 1 }} animate={{ y: -40, opacity: 0, scale: 1.8 }} exit={{ opacity: 0 }} className="pointer-events-none absolute left-6 top-0 text-2xl">{my.emoji}</motion.span>
+            )}
+          </AnimatePresence>
+          <ActionBtn active={!!my} onClick={() => setPicker((v) => !v)}>
+            <span className="text-base leading-none">{my?.emoji ?? '🥃'}</span> {my?.label ?? 'React'}
+          </ActionBtn>
+        </div>
+        <ActionBtn onClick={openComments}><MessageCircle size={17} /> Comment</ActionBtn>
+        {!compact && (
+          <ActionBtn active={saved} onClick={() => { setC((s) => ({ saved: saved ? s.saved.filter((x) => x !== itemId) : [...s.saved, itemId] })); toast(saved ? 'Removed from saved' : 'Saved') }}>
+            <Bookmark size={17} className={saved ? 'fill-current' : ''} /> {saved ? 'Saved' : 'Save'}
+          </ActionBtn>
+        )}
+        <ActionBtn onClick={() => setShare(true)}><Share2 size={17} /> Share</ActionBtn>
+      </div>
+      <WhoReactedSheet open={who} onClose={() => setWho(false)} reactors={reactors} counts={counts} />
+      <ShareSheet open={share} onClose={() => setShare(false)} link={shareLink} />
+      {!onComments && <ItemThread itemId={itemId} open={thread} onClose={() => setThread(false)} />}
+    </div>
+  )
+}
+
+/** Inline comment list (first few) shown under articles and videos. */
+export function ThreadPreview({ itemId, onOpen }: { itemId: string; onOpen: () => void }) {
+  const { c } = useCommunity()
+  const author = useAuthor()
+  const list = c.threads[itemId] ?? []
+  return (
+    <section className="mt-6">
+      <div className="mb-3 flex items-center justify-between">
+        <h2 className="font-serif text-xl">Discussion <span className="text-ink-muted">({threadCount(list)})</span></h2>
+        <Button size="sm" variant="secondary" icon={MessageCircle} onClick={onOpen}>Add comment</Button>
+      </div>
+      {list.length === 0 ? (
+        <button onClick={onOpen} className="w-full rounded-2xl border border-dashed border-line-strong p-5 text-center text-sm text-ink-muted hover:border-gold">Be the first to comment.</button>
+      ) : (
+        <div className="space-y-3">
+          {list.slice(0, 3).map((x) => {
+            const a = author(x.authorId)
+            return (
+              <button key={x.id} onClick={onOpen} className="flex w-full gap-2.5 text-left">
+                <Avatar tone={a.tone} name={a.name} src={a.src} size={34} />
+                <div className="min-w-0 flex-1 rounded-2xl rounded-tl-md bg-surface-2 px-3 py-2">
+                  <p className="text-[13px] font-semibold">{a.name} <span className="font-normal text-ink-muted">· {x.at}</span></p>
+                  <p className="text-sm">{x.text}</p>
+                  {x.replies.length > 0 && <p className="mt-1 text-xs font-semibold text-gold-ink">{x.replies.length} {x.replies.length === 1 ? 'reply' : 'replies'}</p>}
+                </div>
+              </button>
+            )
+          })}
+          {list.length > 3 && <button onClick={onOpen} className="text-sm font-semibold text-gold-ink">View all comments</button>}
+        </div>
+      )}
+    </section>
+  )
+}

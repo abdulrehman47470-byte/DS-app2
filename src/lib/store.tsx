@@ -40,6 +40,10 @@ export interface AppState {
   wishlist: string[]
   about: Record<string, string | string[]>
   hidden: Record<string, boolean>
+  /** Profile banner: a preset key or an uploaded image. */
+  banner: { preset?: string; src?: string }
+  headline: string
+  highlights: string[]
   liked: string[]
   passed: string[]
   matched: string[]
@@ -104,6 +108,9 @@ const DEFAULT_STATE: AppState = {
     music: ['Jazz'],
   },
   hidden: { religion: true, political: true },
+  banner: { preset: 'leather' },
+  headline: '',
+  highlights: ['Hosted 12 lounge nights in Miami', 'Box-dating Padróns since 2022', 'Happy to mentor new smokers on pairing'],
   liked: [],
   passed: [],
   matched: ['m1', 'm3', 'm4', 'm7', 'm6', 'm9'],

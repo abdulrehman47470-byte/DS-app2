@@ -1,8 +1,9 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { EVENTS, JOURNAL, NOTIFICATIONS, POSTS } from '@/data/mock/community'
+import { ARTICLES, LOUNGE_REVIEWS, MEMBER_VIDEOS, PAIRINGS, THREADS } from '@/data/mock/memberContent'
 import { load, save } from '@/lib/storage'
 import { DEFAULT_FLAGS, type FlagKey } from './flags'
-import type { AppNotification, CigarEvent, JournalEntry, NotificationType, Post, ReactionKey } from './types'
+import type { AppNotification, Article, CigarEvent, Comment, CommunityPairing, JournalEntry, LoungeReview, MemberVideo, NotificationType, Post, ReactionKey } from './types'
 
 export interface CommunityState {
   flags: Record<FlagKey, boolean>
@@ -28,6 +29,12 @@ export interface CommunityState {
   postsToday: number
   /** New members' first posts go to review (config value). */
   reviewFirstPosts: number
+  articles: Article[]
+  videos: MemberVideo[]
+  pairings: CommunityPairing[]
+  loungeReviews: LoungeReview[]
+  /** Comments on articles, videos, events, pairings and reviews, keyed by item id. */
+  threads: Record<string, Comment[]>
 }
 
 const DEFAULT: CommunityState = {
@@ -52,6 +59,11 @@ const DEFAULT: CommunityState = {
   favorites: [],
   postsToday: 0,
   reviewFirstPosts: 3,
+  articles: ARTICLES,
+  videos: MEMBER_VIDEOS,
+  pairings: PAIRINGS,
+  loungeReviews: LOUNGE_REVIEWS,
+  threads: THREADS,
 }
 
 export const LIMITS = { postsPerDay: 10, commentsPerDay: 60, reactionsPerDay: 300, postChars: 1500, commentChars: 500 }
@@ -64,7 +76,7 @@ interface Ctx {
 }
 
 const CommunityCtx = createContext<Ctx | null>(null)
-const KEY = 'daily-stogie:community:v1'
+const KEY = 'daily-stogie:community:v2'
 
 export function CommunityProvider({ children }: { children: ReactNode }) {
   const [c, setState] = useState<CommunityState>(() => load(KEY, DEFAULT))

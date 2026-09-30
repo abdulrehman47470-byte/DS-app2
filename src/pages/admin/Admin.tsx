@@ -135,7 +135,12 @@ export default function Admin() {
               <h2 className="font-serif text-2xl">Community moderation</h2>
               <p className="mb-4 text-sm text-ink-muted">Reported or auto-flagged posts, comments, videos and events, plus new members’ first posts.</p>
               <div className="space-y-3">
-                {[...c.posts.filter((p) => p.pendingReview).map((p) => ({ id: p.id, kind: 'First post', who: 'Jordan Hale', text: p.text || p.smoke?.brand || '(media)', reason: 'New member review' })), ...queueItems].map((q) => (
+                {[
+                  ...c.posts.filter((p) => p.pendingReview).map((p) => ({ id: p.id, kind: 'First post', who: 'Jordan Hale', text: p.text || p.smoke?.brand || '(media)', reason: 'New member review' })),
+                  ...c.articles.filter((x) => x.pendingReview).map((x) => ({ id: x.id, kind: 'Article', who: 'Jordan Hale', text: x.title, reason: 'Editorial review before publishing' })),
+                  ...c.videos.filter((x) => x.pendingReview).map((x) => ({ id: x.id, kind: 'Video', who: 'Jordan Hale', text: x.title, reason: 'Video review before publishing' })),
+                  ...queueItems,
+                ].map((q) => (
                   <div key={q.id} className="card flex flex-wrap items-center gap-4 p-4">
                     <div className="min-w-48 flex-1">
                       <p className="flex items-center gap-2 font-semibold">{q.who} <Badge tone="muted">{q.kind}</Badge></p>
@@ -144,13 +149,13 @@ export default function Admin() {
                     </div>
                     <div className="flex flex-wrap gap-2">
                       <Button size="sm" variant="secondary" onClick={() => {
-                        setC((s) => ({ posts: s.posts.map((p) => (p.id === q.id ? { ...p, pendingReview: false } : p)) }))
+                        setC((s) => ({ posts: s.posts.map((p) => (p.id === q.id ? { ...p, pendingReview: false } : p)), articles: s.articles.map((x) => (x.id === q.id ? { ...x, pendingReview: false } : x)), videos: s.videos.map((x) => (x.id === q.id ? { ...x, pendingReview: false } : x)) }))
                         setQueueItems((x) => x.filter((i) => i.id !== q.id))
                         log(`Approved ${q.kind.toLowerCase()} by ${q.who}`)
                       }}>Approve</Button>
                       {(['Remove', 'Warn', 'Suspend', 'Ban'] as const).map((a) => (
                         <Button key={a} size="sm" variant={a === 'Remove' || a === 'Ban' ? 'danger' : 'secondary'} onClick={() => {
-                          if (a === 'Remove') setC((s) => ({ posts: s.posts.filter((p) => p.id !== q.id) }))
+                          if (a === 'Remove') setC((s) => ({ posts: s.posts.filter((p) => p.id !== q.id), articles: s.articles.filter((x) => x.id !== q.id), videos: s.videos.filter((x) => x.id !== q.id) }))
                           setQueueItems((x) => x.filter((i) => i.id !== q.id))
                           log(`${a}: ${q.kind.toLowerCase()} by ${q.who}`)
                         }}>{a}</Button>

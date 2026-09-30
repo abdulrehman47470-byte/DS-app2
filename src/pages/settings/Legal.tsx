@@ -23,7 +23,7 @@ function inline(text: string): ReactNode[] {
 }
 
 /** Minimal, XSS-safe markdown: headings, paragraphs, bullet lists. No raw HTML. */
-function Markdown({ source }: { source: string }) {
+export function Markdown({ source }: { source: string }) {
   const blocks = source.trim().split(/\n{2,}/)
   return (
     <>

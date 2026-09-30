@@ -1,10 +1,13 @@
 import { useQuery } from '@tanstack/react-query'
 import { BadgeCheck, Briefcase, GraduationCap, Heart, Languages, Leaf, MapPin, Sparkles, Wine, Archive, X, BarChart3 } from 'lucide-react'
 import { ProgressBar } from '@/components/layout'
+import { presetForTone, ProfileBanner } from '@/features/profile/Banner'
+import { Activity, Highlights, LevelBadge } from '@/features/profile/ProfileExtras'
+import { pointsFor } from '@/features/community/points'
 import { useCommunity } from '@/features/community/store'
 import type { ReactNode } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { Avatar, BandDivider, MatchRing, Portrait, UserTypeBadge } from '@/components/brand'
+import { Avatar, BandDivider, MatchRing, UserTypeBadge } from '@/components/brand'
 import { Badge, Button, Chip, ErrorState, Skeleton, TopBar } from '@/components/ui'
 import { SafetyActions } from '@/features/safety'
 import { getMember } from '@/lib/api'
@@ -42,7 +45,7 @@ export default function MemberProfile() {
   const nav = useNavigate()
   const { state, set, toast } = useApp()
   const q = useQuery({ queryKey: ['member', id], queryFn: () => getMember(state, id) })
-  const { on } = useCommunity()
+  const { c, on } = useCommunity()
 
   if (q.isLoading)
     return (
@@ -74,22 +77,22 @@ export default function MemberProfile() {
 
   return (
     <div className="flex flex-1 flex-col pb-6">
-      <div className="relative h-52">
-        <Portrait tone={m.tone} initials="" showInitials={false} className="absolute inset-0 blur-[2px]" />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/30 to-black/60" />
+      <ProfileBanner value={{ preset: presetForTone(m.tone) }} className="h-52">
         <TopBar back className="absolute inset-x-0 top-0 bg-transparent text-white backdrop-blur-0 [&_button]:text-white" />
         <div className="absolute right-4 top-16">
           <MatchRing value={m.match} onPhoto size={64} />
         </div>
-      </div>
+      </ProfileBanner>
 
       <div className="relative -mt-14 px-5">
         <Avatar tone={m.tone} name={name} size={112} ring className="rounded-full shadow-deep" />
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <h1 className="font-serif text-[30px] leading-none">{name}</h1>
           {m.verified && <BadgeCheck size={22} className="fill-info text-white" aria-label="Photo verified" />}
+          {on('community_feed') && <LevelBadge level={pointsFor(c, m.id).level.name} />}
         </div>
-        <p className="mt-1.5 text-sm text-ink-muted">{m.pronouns}</p>
+        <p className="mt-1.5 text-[15px]">{m.userType} · {m.prefs.strength} smoker · {m.about.industry}</p>
+        <p className="mt-0.5 text-sm text-ink-muted">{m.pronouns}</p>
         <p className="mt-2 flex flex-wrap items-center gap-2 text-[15px]">
           <UserTypeBadge type={m.userType} />
           <span className="flex items-center gap-1 text-ink-muted">
@@ -100,7 +103,7 @@ export default function MemberProfile() {
           ) : null}
         </p>
         <p className="mt-1 text-sm text-ink-muted">
-          {m.userType} · {m.city}, {m.state} · {m.yearsSmoking} {m.yearsSmoking === 1 ? 'year' : 'years'} smoking · {m.lastActive}
+          {m.yearsSmoking} {m.yearsSmoking === 1 ? 'year' : 'years'} smoking · {m.lastActive}
         </p>
 
         <div className="mt-5 grid grid-cols-2 gap-3">
@@ -122,6 +125,11 @@ export default function MemberProfile() {
             </p>
           )}
         </ProfileSection>
+        <Highlights items={[
+          `${m.yearsSmoking} ${m.yearsSmoking === 1 ? 'year' : 'years'} in the cigar world`,
+          `Collection: ${m.prefs.collectionSize}`,
+          m.mentorTopics.length ? `${m.mentorship === 'Looking for a Mentor' ? 'Learning' : 'Mentors on'}: ${m.mentorTopics.slice(0, 2).join(', ')}` : `Favorite pour: ${m.prefs.pairings[0]}`,
+        ]} />
         {on('match_insights') && <MatchInsights shared={shared} m={m} />}
         <ProfileSection icon={Leaf} title="Cigar Preferences">
           <ChipRow label="Strength" items={[m.prefs.strength]} shared={shared} />
@@ -154,6 +162,8 @@ export default function MemberProfile() {
           <p className="mb-2 text-[15px]">{m.mentorship}</p>
           <ChipRow items={m.mentorTopics} />
         </ProfileSection>
+
+        <Activity who={m.id} name={name} />
 
         <BandDivider label="Safety" />
         <div className="flex flex-col items-center gap-3 pb-4">

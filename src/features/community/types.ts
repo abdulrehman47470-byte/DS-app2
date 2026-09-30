@@ -113,3 +113,62 @@ export const NOTIFICATION_TYPES: { key: NotificationType; label: string }[] = [
   { key: 'event', label: 'Event RSVPs & reminders' },
   { key: 'moderation', label: 'Moderation updates' },
 ]
+
+/** Stogie Blog article. authorId 'staff' = Daily Stogie editorial. */
+export interface Article {
+  id: string
+  slug: string
+  authorId: string
+  title: string
+  cover: { tone?: number; src?: string }
+  category: string
+  body: string // light markdown: paragraphs, ## headings, - lists, **bold**
+  at: string
+  readMins: number
+  pendingReview?: boolean
+  reactions: Partial<Record<ReactionKey, number>>
+  reactors: string[]
+}
+
+export const BLOG_CATEGORIES = ['News', 'Tips', 'Reviews', 'Pairing', 'Humidor', 'Brands', 'Lifestyle', 'Travel']
+
+/** Member-submitted Stogie Session video. */
+export interface MemberVideo {
+  id: string
+  authorId: string
+  title: string
+  description: string
+  category: string
+  video: { kind: 'link' | 'upload'; url: string }
+  tone: number
+  at: string
+  pendingReview?: boolean
+  reactions: Partial<Record<ReactionKey, number>>
+  reactors: string[]
+}
+
+export interface CommunityPairing {
+  id: string
+  authorId: string
+  cigar: string
+  strength: string
+  drink: string
+  note: string
+  at: string
+  reactions: Partial<Record<ReactionKey, number>>
+  reactors: string[]
+}
+
+export interface LoungeReview {
+  id: string
+  loungeId: string
+  authorId: string
+  rating: number
+  tags: string[]
+  pairingMenu: number
+  tips: string
+  photo?: string
+  at: string
+  reactions: Partial<Record<ReactionKey, number>>
+  reactors: string[]
+}

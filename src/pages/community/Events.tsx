@@ -5,7 +5,7 @@ import { Avatar, SafetyBanner } from '@/components/brand'
 import { LoungeMap } from '@/components/LoungeMap'
 import { Badge, Button, Checkbox, EmptyState, ErrorState, Field, Input, Segmented, Select, Sheet, Textarea, TopBar } from '@/components/ui'
 import { LOUNGES } from '@/data/mock/content'
-import { useAuthor } from '@/features/community/PostCard'
+import { EngagementBar, ItemThread, ThreadPreview, useAuthor } from '@/features/community/PostCard'
 import { useCommunity } from '@/features/community/store'
 import type { CigarEvent } from '@/features/community/types'
 import { cn } from '@/lib/cn'
@@ -105,6 +105,7 @@ export function EventDetail() {
   const { state, toast } = useApp()
   const { c, setC } = useCommunity()
   const author = useAuthor()
+  const [thread, setThread] = useState(false)
   const e = c.events.find((x) => x.id === id)
   if (!e) return <ErrorState />
   const lounge = LOUNGES.find((l) => l.id === e.loungeId)
@@ -165,8 +166,13 @@ export function EventDetail() {
             ))}
           </div>
         </section>
+        <div className="mt-6">
+          <EngagementBar itemId={e.id} reactions={{ cheers: e.going.length * 2 + 3 }} reactors={e.going} shareLink={`${location.origin}/events/${e.id}`} onComments={() => setThread(true)} />
+        </div>
+        <ThreadPreview itemId={e.id} onOpen={() => setThread(true)} />
         <SafetyBanner className="mt-5" />
         <p className="mt-3 text-center text-xs text-ink-muted">No ticketing or payments. Venue purchase policies apply.</p>
+        <ItemThread itemId={e.id} open={thread} onClose={() => setThread(false)} title="Event discussion" />
       </div>
     </div>
   )
