@@ -1,8 +1,8 @@
 /**
  * Phase 10 community module flags. These are NOT in the client's brief.
- * Production default is OFF (app_flags table, admin toggles in /admin).
- * In the local dev preview they start ON so the screens can be reviewed;
- * set VITE_COMMUNITY_PREVIEW=false to see the client-only app.
+ * During the demo stage they default to ON everywhere (local and Vercel) so the screens can be
+ * reviewed. Before launch set VITE_COMMUNITY_PREVIEW=false (Vercel > Settings > Environment
+ * Variables) so they default to OFF until the client approves; admins can still toggle each one.
  */
 export const FLAGS = [
   { key: 'community_feed', label: 'Lounge Feed', desc: 'Posts, comments, reactions, polls' },
@@ -25,6 +25,6 @@ export const FLAGS = [
 
 export type FlagKey = (typeof FLAGS)[number]['key']
 
-const preview = import.meta.env.DEV && import.meta.env.VITE_COMMUNITY_PREVIEW !== 'false'
+const preview = import.meta.env.VITE_COMMUNITY_PREVIEW !== 'false'
 
 export const DEFAULT_FLAGS = Object.fromEntries(FLAGS.map((f) => [f.key, preview])) as Record<FlagKey, boolean>

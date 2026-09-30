@@ -1,5 +1,6 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import { GraduationCap, Heart, MessageCircle, Flame, UserRound } from 'lucide-react'
+import { Suspense } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { cn } from '@/lib/cn'
 import { useApp } from '@/lib/store'
@@ -52,16 +53,18 @@ export function AuthLayout() {
   const loc = useLocation()
   return (
     <Column>
-      <AnimatePresence mode="wait">
+      <AnimatePresence mode="wait" initial={false}>
         <motion.div
           key={loc.pathname}
           className="flex flex-1 flex-col"
-          initial={{ opacity: 0, x: 24 }}
+          initial={{ opacity: 0, x: 16 }}
           animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -24 }}
-          transition={{ duration: 0.22, ease: 'easeOut' }}
+          exit={{ opacity: 0, x: -16 }}
+          transition={{ duration: 0.14, ease: 'easeOut' }}
         >
-          <Outlet />
+          <Suspense fallback={<LoadingScreen />}>
+            <Outlet />
+          </Suspense>
         </motion.div>
       </AnimatePresence>
     </Column>
@@ -103,7 +106,9 @@ export function AppShell() {
 
       <Column className="lg:mx-0">
         <main className={cn('flex flex-1 flex-col', !hideTabs && 'pb-[calc(76px+env(safe-area-inset-bottom))] lg:pb-4')}>
-          <Outlet />
+          <Suspense fallback={<LoadingScreen />}>
+            <Outlet />
+          </Suspense>
         </main>
         {!hideTabs && (
           <nav
@@ -154,6 +159,16 @@ export function ProgressBar({ value, label }: { value: number; label?: string })
           transition={{ type: 'spring', stiffness: 120, damping: 20 }}
         />
       </div>
+    </div>
+  )
+}
+
+function LoadingScreen() {
+  return (
+    <div className="space-y-3 p-4" role="status" aria-label="Loading">
+      <div className="skeleton h-10 w-1/2 rounded-xl" />
+      <div className="skeleton h-40 rounded-[20px]" />
+      <div className="skeleton h-20 rounded-[20px]" />
     </div>
   )
 }

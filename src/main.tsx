@@ -12,6 +12,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import App from './App'
+import { ErrorBoundary } from './components/ErrorBoundary'
 import { AppProvider } from './lib/store'
 import { CommunityProvider } from './features/community/store'
 
@@ -21,6 +22,7 @@ const queryClient = new QueryClient({
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
+    <ErrorBoundary>
     <QueryClientProvider client={queryClient}>
       <AppProvider>
         <CommunityProvider>
@@ -32,5 +34,6 @@ createRoot(document.getElementById('root')!).render(
         </CommunityProvider>
       </AppProvider>
     </QueryClientProvider>
+    </ErrorBoundary>
   </StrictMode>,
 )

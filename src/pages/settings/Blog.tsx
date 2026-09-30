@@ -1,5 +1,5 @@
 import { Bold, BookOpen, Clock, Eye, Flag, Heading2, ImagePlus, List, MessageCircle, PenLine, Pencil, Trash2 } from 'lucide-react'
-import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react'
+import { useMemo, useRef, useState, type ChangeEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { Avatar, UserTypeBadge } from '@/components/brand'
 import { Badge, Button, Chip, EmptyState, Field, Input, Segmented, Select, Skeleton, Textarea, TopBar } from '@/components/ui'
@@ -41,11 +41,7 @@ export function Blog() {
   const { c } = useCommunity()
   const [tab, setTab] = useState<'latest' | 'editorial' | 'members' | 'saved'>('latest')
   const [cat, setCat] = useState('All')
-  const [loading, setLoading] = useState(true)
-  useEffect(() => {
-    const t = setTimeout(() => setLoading(false), 350)
-    return () => clearTimeout(t)
-  }, [])
+  const loading = false // local data; the Phase 7 Supabase query will drive this
 
   const list = useMemo(
     () =>

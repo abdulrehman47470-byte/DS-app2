@@ -30,6 +30,7 @@ async function step(name, fn) {
 
 await step('Discover: tab order is Lounge Feed then People', async () => {
   await page.goto(BASE + '/discover')
+  await page.getByRole('tab', { name: 'Lounge Feed' }).waitFor({ timeout: 5000 })
   const tabs = await page.getByRole('tab').allInnerTexts()
   if (tabs[0] !== 'Lounge Feed' || tabs[1] !== 'People') throw new Error(`tabs are ${JSON.stringify(tabs)}`)
 })

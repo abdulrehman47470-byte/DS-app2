@@ -2,7 +2,7 @@ import { CalendarDays, CalendarPlus, MapPin, MessageCircle, Plus, Share2, Users 
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { Avatar, SafetyBanner } from '@/components/brand'
-import { LoungeMap } from '@/components/LoungeMap'
+import { LoungeMap } from '@/components/Map'
 import { Badge, Button, Checkbox, EmptyState, ErrorState, Field, Input, Segmented, Select, Sheet, Textarea, TopBar } from '@/components/ui'
 import { LOUNGES } from '@/data/mock/content'
 import { EngagementBar, ItemThread, ThreadPreview, useAuthor } from '@/features/community/PostCard'

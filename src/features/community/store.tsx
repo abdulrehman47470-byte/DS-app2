@@ -76,7 +76,7 @@ interface Ctx {
 }
 
 const CommunityCtx = createContext<Ctx | null>(null)
-const KEY = 'daily-stogie:community:v2'
+const KEY = 'daily-stogie:community:v3'
 
 export function CommunityProvider({ children }: { children: ReactNode }) {
   const [c, setState] = useState<CommunityState>(() => load(KEY, DEFAULT))

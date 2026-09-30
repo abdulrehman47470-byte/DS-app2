@@ -1,5 +1,5 @@
 import { Bookmark, CalendarDays, Flame, ImagePlus, Newspaper, SlidersHorizontal } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Avatar } from '@/components/brand'
 import { Chip, EmptyState, Segmented, Select, Skeleton } from '@/components/ui'
@@ -22,14 +22,10 @@ export function Feed() {
   const [topic, setTopic] = useState('')
   const [composer, setComposer] = useState<PostType | null>(null)
   const [commentsFor, setCommentsFor] = useState<Post | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
   const [smokeOnly, setSmokeOnly] = useState(false)
   const [sf, setSf] = useState({ brand: '', strength: '', wrapper: '', pairing: '' })
 
-  useEffect(() => {
-    const t = setTimeout(() => setLoading(false), 450)
-    return () => clearTimeout(t)
-  }, [tab])
 
   const posts = useMemo(() => {
     const visible = c.posts.filter(
@@ -70,7 +66,7 @@ export function Feed() {
       <div className="px-4">
         <Segmented
           value={tab}
-          onChange={(t) => { setLoading(true); setTab(t) }}
+          onChange={(t) => { setLoading(false); setTab(t) }}
           options={[
             { value: 'foryou', label: 'For You' },
             { value: 'nearby', label: 'Nearby' },

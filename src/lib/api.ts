@@ -7,7 +7,9 @@ import { MEMBERS } from '@/data/mock/members'
 import type { AppState } from './store'
 import type { Conversation, Member, ScoredMember } from '@/types'
 
-const delay = (ms = 450) => new Promise((r) => setTimeout(r, ms))
+// Sample data is on the device, so it resolves immediately. Set VITE_MOCK_LATENCY (ms) to preview loading states.
+const LATENCY = Number(import.meta.env.VITE_MOCK_LATENCY ?? 0)
+const delay = (ms = LATENCY) => (ms > 0 ? new Promise((r) => setTimeout(r, Math.min(ms, LATENCY))) : Promise.resolve())
 
 type MeLike = Pick<AppState, 'prefs' | 'about'>
 

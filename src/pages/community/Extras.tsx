@@ -2,7 +2,7 @@ import { Award, Bell, BellOff, CheckCheck, Compass, Globe2, MapPin, Plane, Setti
 import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Avatar, UserTypeBadge } from '@/components/brand'
-import { LoungeMap } from '@/components/LoungeMap'
+import { LoungeMap } from '@/components/Map'
 import { Badge, Button, Chip, EmptyState, Field, Input, Select, Sheet, Toggle, TopBar } from '@/components/ui'
 import { PAIRING_GUIDE } from '@/data/mock/community'
 import { LOUNGES } from '@/data/mock/content'
