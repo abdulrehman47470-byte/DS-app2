@@ -222,15 +222,15 @@ function coverFromFile(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const img = new Image()
     img.onload = () => {
-      const s = Math.min(1, 1400 / img.width)
+      const s = Math.min(1, 1200 / img.width)
       const cv = document.createElement('canvas')
       cv.width = img.width * s
       cv.height = img.height * s
       cv.getContext('2d')!.drawImage(img, 0, 0, cv.width, cv.height)
-      resolve(cv.toDataURL('image/jpeg', 0.82))
+      resolve(cv.toDataURL('image/jpeg', 0.75))
       URL.revokeObjectURL(img.src)
     }
-    img.onerror = reject
+    img.onerror = () => reject(new Error('unsupported'))
     img.src = URL.createObjectURL(file)
   })
 }
@@ -250,6 +250,9 @@ export function BlogEditor() {
   const fileRef = useRef<HTMLInputElement>(null)
   const areaRef = useRef<HTMLTextAreaElement>(null)
   const words = body.trim() ? body.trim().split(/\s+/).length : 0
+  const MIN_WORDS = 10
+  const titleOk = title.trim().length >= 3
+  const bodyOk = words >= MIN_WORDS
 
   const insert = (before: string, after = '', placeholder = 'text') => {
     const el = areaRef.current
@@ -267,13 +270,20 @@ export function BlogEditor() {
   const onCover = async (e: ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0]
     e.target.value = ''
-    if (!f || !f.type.startsWith('image/')) return
-    setCover({ src: await coverFromFile(f) })
+    if (!f) return
+    if (!f.type.startsWith('image/')) return setError('Please choose an image file (JPG or PNG).')
+    if (f.size > 15 * 1024 * 1024) return setError('That image is over 15 MB. Please choose a smaller one.')
+    try {
+      setCover({ src: await coverFromFile(f) })
+      setError(undefined)
+    } catch {
+      setError('We couldn’t read that image. Please use a JPG or PNG (iPhone HEIC photos aren’t supported yet).')
+    }
   }
 
   const publish = () => {
-    if (title.trim().length < 8) return setError('Give your article a title (at least 8 characters).')
-    if (words < 40) return setError('Articles need at least 40 words.')
+    if (!titleOk) return setError('Add a title (at least 3 characters).')
+    if (!bodyOk) return setError(`Write a little more: at least ${MIN_WORDS} words (you have ${words}).`)
     const blocked = checkContent(`${title} ${body}`)
     if (blocked) return setError(blocked)
     const slug = existing?.slug ?? `${title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60)}-${Date.now().toString(36)}`
@@ -328,7 +338,7 @@ export function BlogEditor() {
           </div>
         ) : (
           <>
-            <Input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={120} placeholder="Title" aria-label="Title" className="min-h-14 border-0 bg-transparent px-1 font-serif text-[26px] focus:ring-0" />
+            <Input value={title} onChange={(e) => { setTitle(e.target.value); setError(undefined) }} maxLength={120} placeholder="Title" aria-label="Title" className="min-h-14 border-0 bg-transparent px-1 font-serif text-[26px] focus:ring-0" />
             <Field label="Category" htmlFor="cat">
               <Select id="cat" value={category} onChange={(e) => setCategory(e.target.value)}>
                 {BLOG_CATEGORIES.map((x) => <option key={x}>{x}</option>)}
@@ -341,12 +351,17 @@ export function BlogEditor() {
                 <button type="button" onClick={() => insert('\n\n- ', '', 'List item')} aria-label="Bullet list" className="grid size-9 place-items-center rounded-lg hover:bg-surface"><List size={17} /></button>
                 <span className="ml-auto self-center pr-2 text-xs text-ink-muted">{words} words · {Math.max(1, Math.round(words / 200))} min</span>
               </div>
-              <Textarea ref={areaRef} value={body} onChange={(e) => setBody(e.target.value)} aria-label="Article body" placeholder="Tell your story. Use the toolbar for headings, bold and lists." className="min-h-[320px] font-[inherit] text-[16px]" />
+              <Textarea ref={areaRef} value={body} onChange={(e) => { setBody(e.target.value); setError(undefined) }} aria-label="Article body" placeholder="Tell your story. Use the toolbar for headings, bold and lists." className="min-h-[320px] font-[inherit] text-[16px]" />
             </div>
           </>
         )}
-        {error && <p className="text-sm text-danger" role="alert">{error}</p>}
-        <Button size="lg" block onClick={publish}>{existing ? 'Resubmit for review' : 'Submit for review'}</Button>
+        {error && <p className="rounded-xl bg-danger/10 px-3 py-2 text-sm text-danger" role="alert">{error}</p>}
+        <ul className="flex flex-wrap gap-x-4 gap-y-1 text-xs" aria-label="Before you submit">
+          <li className={titleOk ? 'text-success' : 'text-ink-muted'}>{titleOk ? '✓' : '○'} Title</li>
+          <li className={bodyOk ? 'text-success' : 'text-ink-muted'}>{bodyOk ? '✓' : '○'} At least {MIN_WORDS} words ({words})</li>
+          <li className="text-ink-muted">{cover.src ? '✓ Cover photo' : '○ Cover photo (optional)'}</li>
+        </ul>
+        <Button size="lg" block disabled={!titleOk || !bodyOk} onClick={publish}>{existing ? 'Resubmit for review' : 'Submit for review'}</Button>
         <p className="text-center text-xs text-ink-muted">Articles are reviewed by an editor before other members see them. No selling or advertising tobacco.</p>
       </div>
       <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={onCover} />

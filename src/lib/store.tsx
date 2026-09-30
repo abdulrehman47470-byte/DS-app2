@@ -141,7 +141,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   )
   const [toasts, setToasts] = useState<Toast[]>([])
 
-  useEffect(() => save(KEY, state), [state])
+  useEffect(() => {
+    save(KEY, state)
+  }, [state])
 
   useEffect(() => {
     const mq = window.matchMedia('(prefers-color-scheme: dark)')
@@ -166,10 +168,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const reset = useCallback(() => setState((s) => ({ ...DEFAULT_STATE, theme: s.theme })), [])
 
   const toast = useCallback((text: string) => {
-    const id = Date.now()
+    const id = Date.now() + Math.random()
     setToasts((t) => [...t, { id, text }])
-    setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), 2600)
+    setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), text.length > 60 ? 5000 : 2600)
   }, [])
+
+  useEffect(() => {
+    const onToast = (e: Event) => toast(String((e as CustomEvent).detail))
+    window.addEventListener('ds-toast', onToast)
+    return () => window.removeEventListener('ds-toast', onToast)
+  }, [toast])
 
   const value = useMemo(
     () => ({ state, set, reset, resolvedTheme, toast, toasts }),

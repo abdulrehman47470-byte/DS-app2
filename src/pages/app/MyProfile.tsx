@@ -53,6 +53,7 @@ export default function MyProfile() {
       toast('New photo submitted for review')
       URL.revokeObjectURL(img.src)
     }
+    img.onerror = () => toast('We couldn’t read that image. Please use a JPG or PNG.')
     img.src = URL.createObjectURL(f)
   }
 

@@ -342,7 +342,12 @@ function ReviewSheet({ open, loungeId, onClose }: { open: boolean; loungeId: str
           <input ref={photoRef} type="file" accept="image/*" className="hidden" onChange={async (e) => {
             const f = e.target.files?.[0]
             e.target.value = ''
-            if (f && f.type.startsWith('image/')) setPhoto(await shrinkImage(f))
+            if (!f || !f.type.startsWith('image/')) return
+            try {
+              setPhoto(await shrinkImage(f))
+            } catch {
+              toast('We couldn’t read that image. Please use a JPG or PNG.')
+            }
           }} />
         </div>
         <Field label="Tips for other members" htmlFor="tips" optional><Textarea id="tips" value={tips} onChange={(e) => setTips(e.target.value)} maxLength={500} placeholder="Best seats, when it’s quiet, staff picks…" /></Field>

@@ -23,7 +23,7 @@ export function ProfileBanner({ value, className, children, onEdit }: { value: B
         <button
           onClick={onEdit}
           aria-label="Change banner"
-          className="absolute bottom-3 right-3 inline-flex min-h-9 items-center gap-1.5 rounded-full bg-black/45 px-3 text-xs font-semibold text-white backdrop-blur hover:bg-black/60"
+          className="absolute left-4 top-[max(16px,env(safe-area-inset-top))] z-20 inline-flex min-h-11 items-center gap-1.5 rounded-full bg-black/45 px-3.5 text-[13px] font-semibold text-white backdrop-blur hover:bg-black/60"
         >
           <Camera size={14} /> Edit banner
         </button>
@@ -38,7 +38,7 @@ function toBannerDataUrl(file: File): Promise<string> {
     const img = new Image()
     img.onload = () => {
       // 3:1 center crop at up to 1500px wide
-      const w = Math.min(1500, img.width)
+      const w = Math.min(1200, img.width)
       const h = Math.round(w / 3)
       const scale = Math.max(w / img.width, h / img.height)
       const c = document.createElement('canvas')
@@ -48,10 +48,10 @@ function toBannerDataUrl(file: File): Promise<string> {
       const dw = img.width * scale
       const dh = img.height * scale
       ctx.drawImage(img, (w - dw) / 2, (h - dh) / 2, dw, dh)
-      resolve(c.toDataURL('image/jpeg', 0.82))
+      resolve(c.toDataURL('image/jpeg', 0.75))
       URL.revokeObjectURL(img.src)
     }
-    img.onerror = reject
+    img.onerror = () => reject(new Error('unsupported'))
     img.src = URL.createObjectURL(file)
   })
 }
@@ -66,7 +66,11 @@ export function BannerEditor({ open, onClose, value, onChange }: { open: boolean
     if (!f.type.startsWith('image/')) return setError('Please choose an image.')
     if (f.size > 15 * 1024 * 1024) return setError('Images must be under 15 MB.')
     setError(undefined)
-    onChange({ src: await toBannerDataUrl(f) })
+    try {
+      onChange({ src: await toBannerDataUrl(f) })
+    } catch {
+      setError('We couldn’t read that image. Please use a JPG or PNG.')
+    }
   }
   return (
     <Sheet open={open} onClose={onClose} title="Profile banner" footer={<Button block onClick={onClose}>Done</Button>}>

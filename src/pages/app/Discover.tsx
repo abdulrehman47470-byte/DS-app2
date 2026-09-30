@@ -143,8 +143,8 @@ export default function Discover() {
             value={view}
             onChange={(v) => setParams(v === 'feed' ? { view: 'feed' } : {}, { replace: true })}
             options={[
-              { value: 'people', label: 'People' },
               { value: 'feed', label: 'Lounge Feed' },
+              { value: 'people', label: 'People' },
             ]}
           />
         </div>

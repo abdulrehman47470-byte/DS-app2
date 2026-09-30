@@ -80,7 +80,9 @@ const KEY = 'daily-stogie:community:v2'
 
 export function CommunityProvider({ children }: { children: ReactNode }) {
   const [c, setState] = useState<CommunityState>(() => load(KEY, DEFAULT))
-  useEffect(() => save(KEY, c), [c])
+  useEffect(() => {
+    save(KEY, c)
+  }, [c])
   const setC = useCallback<Ctx['setC']>((patch) => {
     setState((s) => ({ ...s, ...(typeof patch === 'function' ? patch(s) : patch) }))
   }, [])

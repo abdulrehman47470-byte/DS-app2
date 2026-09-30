@@ -90,7 +90,7 @@ function toSmallDataUrl(file: File): Promise<string> {
       resolve(c.toDataURL('image/jpeg', 0.82))
       URL.revokeObjectURL(img.src)
     }
-    img.onerror = reject
+    img.onerror = () => reject(new Error('unsupported'))
     img.src = URL.createObjectURL(file)
   })
 }

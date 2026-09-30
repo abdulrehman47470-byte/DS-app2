@@ -24,10 +24,10 @@ function shrink(file: File): Promise<string> {
       c.width = img.width * s
       c.height = img.height * s
       c.getContext('2d')!.drawImage(img, 0, 0, c.width, c.height)
-      resolve(c.toDataURL('image/jpeg', 0.8))
+      resolve(c.toDataURL('image/jpeg', 0.75))
       URL.revokeObjectURL(img.src)
     }
-    img.onerror = reject
+    img.onerror = () => reject(new Error('unsupported'))
     img.src = URL.createObjectURL(file)
   })
 }
@@ -78,7 +78,9 @@ export function Composer({ open, onClose, initialType = 'update', initialSmoke }
   const addPhotos = async (e: ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []).slice(0, 6 - photos.length)
     e.target.value = ''
-    const urls = await Promise.all(files.filter((f) => f.type.startsWith('image/')).map(shrink))
+    const results = await Promise.allSettled(files.filter((f) => f.type.startsWith('image/')).map(shrink))
+    const urls = results.flatMap((r) => (r.status === 'fulfilled' ? [r.value] : []))
+    if (urls.length < results.length) setError('Some photos couldn’t be read. Please use JPG or PNG.')
     setPhotos((p) => [...p, ...urls].slice(0, 6))
   }
 
