@@ -14,6 +14,8 @@ import { Still } from '@/pages/settings/Content'
 import { cn } from '@/lib/cn'
 import { useApp } from '@/lib/store'
 import { MusicCard, VideoCard } from './embeds'
+import { MediaImg } from '@/components/Media'
+import { deleteMedia } from '@/lib/media'
 import { checkContent } from './moderation'
 import { LIMITS, useCommunity } from './store'
 import { REACTIONS, type Comment, type Post, type ReactionKey, type SmokeReport } from './types'
@@ -88,7 +90,7 @@ function Photos({ photos }: { photos: Post['photos'] }) {
     <div className={cn('grid gap-1 overflow-hidden rounded-2xl', n === 1 ? 'grid-cols-1' : 'grid-cols-2')}>
       {photos.slice(0, 4).map((p, i) => (
         <div key={i} className={cn('relative', n === 1 ? 'aspect-[4/3]' : 'aspect-square', n === 3 && i === 0 && 'row-span-2 aspect-auto')}>
-          {p.src ? <img src={p.src} alt="" className="absolute inset-0 size-full object-cover" /> : <Still tone={p.tone ?? 30} variant={i} className="absolute inset-0" />}
+          {p.src ? <MediaImg src={p.src} className="absolute inset-0 size-full object-cover" /> : <Still tone={p.tone ?? 30} variant={i} className="absolute inset-0" />}
           {i === 3 && n > 4 && <span className="absolute inset-0 grid place-items-center bg-black/50 font-serif text-2xl text-white">+{n - 4}</span>}
         </div>
       ))}
@@ -245,7 +247,13 @@ export function PostCard({ post, onOpenComments }: { post: Post; onOpenComments:
                 <MenuItem icon={Bookmark} onClick={() => { setMenu(false); setC((s) => ({ saved: saved ? s.saved.filter((x) => x !== post.id) : [...s.saved, post.id] })); toast(saved ? 'Removed from saved' : 'Saved') }}>{saved ? 'Unsave' : 'Save'}</MenuItem>
                 <MenuItem icon={EyeOff} onClick={() => { setMenu(false); setC((s) => ({ hidden: [...s.hidden, post.id] })); toast('Post hidden') }}>Hide post</MenuItem>
                 {post.authorId === 'me' ? (
-                  <MenuItem icon={Trash2} danger onClick={() => { setMenu(false); setC((s) => ({ posts: s.posts.filter((x) => x.id !== post.id) })); toast('Post deleted') }}>Delete</MenuItem>
+                  <MenuItem icon={Trash2} danger onClick={() => {
+                    setMenu(false)
+                    post.photos.forEach((ph) => deleteMedia(ph.src))
+                    if (post.video?.kind === 'upload') deleteMedia(post.video.url)
+                    setC((s) => ({ posts: s.posts.filter((x) => x.id !== post.id) }))
+                    toast('Post deleted')
+                  }}>Delete</MenuItem>
                 ) : (
                   <MenuItem icon={Flag} danger onClick={() => { setMenu(false); setReport(true) }}>Report</MenuItem>
                 )}

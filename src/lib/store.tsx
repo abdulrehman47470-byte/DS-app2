@@ -26,12 +26,16 @@ export interface Demographics {
 export interface AppState {
   theme: ThemePref
   signedIn: boolean
+  /** Demo sign-in account (mock Google / Apple / email). Phase 2 swaps in Supabase Auth. */
+  account: { provider: 'google' | 'apple' | 'email'; name: string; email: string } | null
   dob: string | null
   verifyStatus: VerifyStatus
   ethicsAgreed: boolean
   photo: string | null
   photoStatus: 'pending' | 'approved' | 'rejected'
   plan: 'monthly' | 'yearly' | null
+  /** Demo checkout receipt (mock payment). Phase 6 swaps in Stripe; no real card data is kept. */
+  payment: { receiptId: string; brand: string; last4: string; amount: string; paidAt: string; renewsOn: string } | null
   wizardStep: number
   demographics: Demographics
   prefs: Record<string, string | string[]>
@@ -53,12 +57,14 @@ export interface AppState {
 const DEFAULT_STATE: AppState = {
   theme: 'light',
   signedIn: false,
+  account: null,
   dob: null,
   verifyStatus: 'Not Started',
   ethicsAgreed: false,
   photo: null,
   photoStatus: 'pending',
   plan: null,
+  payment: null,
   wizardStep: 1,
   demographics: {
     name: 'Jordan Hale',

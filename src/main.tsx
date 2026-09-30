@@ -41,4 +41,15 @@ createRoot(document.getElementById('root')!).render(
   </StrictMode>,
 )
 
-if (import.meta.env.PROD) setupPwa()
+// Offline cache: registered once every screen has been prefetched, so its background downloads
+// never compete with screens the member is about to open (fallback: 8 s after load).
+if (import.meta.env.PROD) {
+  let started = false
+  const start = () => {
+    if (started) return
+    started = true
+    setupPwa()
+  }
+  window.addEventListener('ds:prefetched', start, { once: true })
+  window.addEventListener('load', () => setTimeout(start, 8000), { once: true })
+}

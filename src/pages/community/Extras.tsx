@@ -1,4 +1,4 @@
-import { Award, Bell, BellOff, CheckCheck, Compass, Globe2, MapPin, Plane, Settings2, Stamp, Wine } from 'lucide-react'
+import { Trash2, Award, Bell, BellOff, CheckCheck, Compass, Globe2, MapPin, Plane, Settings2, Stamp, Wine } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Avatar, UserTypeBadge } from '@/components/brand'
@@ -156,6 +156,11 @@ function CommunityPairings({ strength }: { strength: string }) {
                 <Avatar tone={a.tone} name={a.name} src={a.src} size={34} />
                 <p className="min-w-0 flex-1 text-sm"><strong>{a.name}</strong> <span className="text-ink-muted">· {p.at}</span></p>
                 <Badge tone="muted">{p.strength}</Badge>
+                {p.authorId === 'me' && (
+                  <button aria-label="Delete pairing" onClick={() => { setC((s) => ({ pairings: s.pairings.filter((x) => x.id !== p.id) })); toast('Pairing deleted') }} className="grid size-9 place-items-center rounded-full text-danger hover:bg-danger/10">
+                    <Trash2 size={16} />
+                  </button>
+                )}
               </div>
               <p className="mt-3 font-serif text-lg leading-tight">{p.cigar} <span className="text-gold-ink">+</span> {p.drink}</p>
               {p.note && <p className="mt-1 text-sm text-ink-muted">“{p.note}”</p>}

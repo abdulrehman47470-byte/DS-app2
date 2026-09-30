@@ -6,6 +6,7 @@ import { Badge, Button, Checkbox, TopBar } from '@/components/ui'
 import { cn } from '@/lib/cn'
 import { useApp } from '@/lib/store'
 import { StepHeader } from './Verify'
+import { Checkout } from '@/features/payments/Checkout'
 
 // TODO(docs): replace with the exact Code of Ethics summary from the client's document.
 const ETHICS = [
@@ -202,6 +203,9 @@ export function Subscribe({ settings }: { settings?: boolean }) {
   const nav = useNavigate()
   const { state, set, toast } = useApp()
   const [plan, setPlan] = useState<'monthly' | 'yearly'>(state.plan ?? 'yearly')
+  const [checkout, setCheckout] = useState(false)
+  const chosen = PLANS.find((p) => p.id === plan)!
+  const receipt = state.payment
   return (
     <div className="flex flex-1 flex-col">
       <TopBar back={settings ? '/settings' : '/photo'} title={settings ? 'Subscription' : undefined} />
@@ -265,19 +269,31 @@ export function Subscribe({ settings }: { settings?: boolean }) {
           Subscriptions renew automatically until cancelled. See{' '}
           <Link to="/legal/terms" className="text-gold-ink underline">Terms</Link> for billing and refunds.
         </p>
-        <Button
-          size="lg"
-          block
-          className="mt-3"
-          onClick={() => {
-            set({ plan })
-            toast('Payment placeholder: Stripe arrives in Phase 6')
-            nav(settings ? '/settings' : '/onboarding/1')
-          }}
-        >
-          {settings ? 'Update plan' : 'Continue to Payment'}
+        {settings && receipt && (
+          <div className="card mt-4 p-4 text-sm">
+            <p className="micro-label mb-2">Last payment</p>
+            <p className="flex justify-between"><span className="text-ink-muted">Amount</span><span className="font-medium">{receipt.amount}</span></p>
+            <p className="flex justify-between"><span className="text-ink-muted">Paid with</span><span className="font-medium">{receipt.last4 ? `${receipt.brand} •••• ${receipt.last4}` : receipt.brand}</span></p>
+            <p className="flex justify-between"><span className="text-ink-muted">Renews on</span><span className="font-medium">{receipt.renewsOn}</span></p>
+            <p className="flex justify-between"><span className="text-ink-muted">Receipt</span><span className="font-medium">{receipt.receiptId}</span></p>
+          </div>
+        )}
+        <Button size="lg" block className="mt-3" onClick={() => setCheckout(true)}>
+          {settings ? (state.plan === plan ? 'Renew / update payment' : 'Switch plan') : `Continue to Payment · ${chosen.price}`}
         </Button>
       </div>
+      <Checkout
+        open={checkout}
+        plan={{ id: chosen.id, name: chosen.name, price: chosen.price, per: chosen.per }}
+        email={state.account?.email ?? ''}
+        onClose={() => setCheckout(false)}
+        onPaid={(r) => set({ plan, payment: r })}
+        onContinue={() => {
+          setCheckout(false)
+          toast(settings ? 'Subscription updated' : 'Membership active. Let’s set up your profile.')
+          nav(settings ? '/settings' : '/onboarding/1')
+        }}
+      />
     </div>
   )
 }

@@ -8,6 +8,8 @@ import type L from 'leaflet'
 import { useSearchParams } from 'react-router-dom'
 import { LoungeMap } from '@/components/Map'
 import { milesBetween } from '@/lib/geo'
+import { MediaImg } from '@/components/Media'
+import { deleteMedia, saveMedia, shrinkToBlob } from '@/lib/media'
 import { Badge, Button, Chip, EmptyState, ErrorState, Field, Input, ListSkeleton, Segmented, Select, Sheet, Textarea, TopBar } from '@/components/ui'
 import { PREF_SECTIONS } from '@/data/options'
 import { Bands, EngagementBar, useAuthor } from '@/features/community/PostCard'
@@ -318,12 +320,22 @@ function ReviewSheet({ open, loungeId, onClose }: { open: boolean; loungeId: str
       onClose={onClose}
       title="Review this lounge"
       footer={
-        <Button block disabled={!rating} onClick={() => {
+        <div className="flex gap-2">
+        {existing && (
+          <Button variant="danger" onClick={() => {
+            deleteMedia(existing.photo)
+            setC((s) => ({ loungeReviews: s.loungeReviews.filter((r) => r.id !== existing.id) }))
+            toast('Review deleted')
+            onClose()
+          }}>Delete</Button>
+        )}
+        <Button className="flex-1" disabled={!rating} onClick={() => {
           const review: LoungeReview = { id: existing?.id ?? `r${Date.now()}`, loungeId, authorId: 'me', rating, tags, pairingMenu: menu, tips: tips.trim(), photo, at: 'now', reactions: existing?.reactions ?? {}, reactors: existing?.reactors ?? [] }
           setC((s) => ({ loungeReviews: existing ? s.loungeReviews.map((r) => (r.id === existing.id ? review : r)) : [review, ...s.loungeReviews] }))
           toast('Review posted. Thanks for helping the community!')
           onClose()
-        }}>Submit review</Button>
+        }}>{existing ? 'Save review' : 'Submit review'}</Button>
+        </div>
       }
     >
       <div className="space-y-5 pb-2">
@@ -336,7 +348,7 @@ function ReviewSheet({ open, loungeId, onClose }: { open: boolean; loungeId: str
         <div>
           <p className="mb-2 text-sm font-semibold">Photo <span className="font-normal text-ink-muted">(optional)</span></p>
           {photo ? (
-            <div className="relative h-36 overflow-hidden rounded-2xl"><img src={photo} alt="" className="size-full object-cover" /><button onClick={() => setPhoto(undefined)} className="absolute right-2 top-2 rounded-full bg-black/60 px-2.5 py-1 text-xs font-semibold text-white">Remove</button></div>
+            <div className="relative h-36 overflow-hidden rounded-2xl"><MediaImg src={photo} className="size-full object-cover" /><button onClick={() => { if (photo !== existing?.photo) deleteMedia(photo); setPhoto(undefined) }} className="absolute right-2 top-2 rounded-full bg-black/60 px-2.5 py-1 text-xs font-semibold text-white">Remove</button></div>
           ) : (
             <Button variant="secondary" block onClick={() => photoRef.current?.click()}>Add a photo of the lounge</Button>
           )}
@@ -345,7 +357,7 @@ function ReviewSheet({ open, loungeId, onClose }: { open: boolean; loungeId: str
             e.target.value = ''
             if (!f || !f.type.startsWith('image/')) return
             try {
-              setPhoto(await shrinkImage(f))
+              setPhoto(await saveMedia(await shrinkToBlob(f, 1200, 0.8)))
             } catch {
               toast('We couldn’t read that image. Please use a JPG or PNG.')
             }
@@ -396,23 +408,6 @@ function CheckinSheet({ open, lounge, onClose }: { open: boolean; lounge: Lounge
   )
 }
 
-function shrinkImage(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const img = new Image()
-    img.onload = () => {
-      const k = Math.min(1, 1000 / Math.max(img.width, img.height))
-      const cv = document.createElement('canvas')
-      cv.width = img.width * k
-      cv.height = img.height * k
-      cv.getContext('2d')!.drawImage(img, 0, 0, cv.width, cv.height)
-      resolve(cv.toDataURL('image/jpeg', 0.8))
-      URL.revokeObjectURL(img.src)
-    }
-    img.onerror = reject
-    img.src = URL.createObjectURL(file)
-  })
-}
-
 function ReviewList({ loungeId }: { loungeId: string }) {
   const { c } = useCommunity()
   const author = useAuthor()
@@ -435,7 +430,7 @@ function ReviewList({ loungeId }: { loungeId: string }) {
                 <Bands value={r.rating} size={10} />
               </div>
               {r.tips && <p className="mt-2 text-sm">{r.tips}</p>}
-              {r.photo && <img src={r.photo} alt="" className="mt-2 h-36 w-full rounded-xl object-cover" />}
+              {r.photo && <MediaImg src={r.photo} className="mt-2 h-36 w-full rounded-xl object-cover" />}
               {r.tags.length > 0 && <div className="mt-2 flex flex-wrap gap-1.5">{r.tags.map((t) => <Chip key={t} size="sm">{t}</Chip>)}</div>}
               <div className="mt-2"><EngagementBar compact itemId={r.id} reactions={r.reactions} reactors={r.reactors} shareLink={`${location.origin}/settings/search?lounge=${loungeId}`} /></div>
             </article>

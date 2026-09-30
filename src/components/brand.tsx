@@ -2,33 +2,17 @@ import { BadgeCheck, ShieldCheck } from 'lucide-react'
 import { useId, type ReactNode } from 'react'
 import { cn } from '@/lib/cn'
 
-/* Original mark: a tobacco leaf wrapped by a cigar band. */
-export function LogoMark({ size = 48, className }: { size?: number; className?: string }) {
-  const id = useId()
+/* Brand logo (public/logo-256.webp, from the client's logo-mark.png) on a cream badge,
+   so the black figure stays visible on dark backgrounds too. */
+export function LogoMark({ size = 48, className, plain }: { size?: number; className?: string; plain?: boolean }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 64 64" className={className} aria-hidden>
-      <defs>
-        <linearGradient id={`${id}l`} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="var(--gold-light)" />
-          <stop offset="0.55" stopColor="var(--gold)" />
-          <stop offset="1" stopColor="var(--gold-deep)" />
-        </linearGradient>
-      </defs>
-      <path
-        d="M32 5c11 8.5 17 19.5 17 30.5C49 46 42 54.5 32 59 22 54.5 15 46 15 35.5 15 24.5 21 13.5 32 5z"
-        fill={`url(#${id}l)`}
-      />
-      <path d="M32 9v48" stroke="var(--on-gold)" strokeOpacity=".55" strokeWidth="1.4" />
-      {[20, 27, 34, 41, 48].map((y, i) => (
-        <g key={y} stroke="var(--on-gold)" strokeOpacity=".35" strokeWidth="1.1" fill="none">
-          <path d={`M32 ${y}q${-6 - i} -2 ${-10 - i} ${-6 + i * 0.5}`} />
-          <path d={`M32 ${y}q${6 + i} -2 ${10 + i} ${-6 + i * 0.5}`} />
-        </g>
-      ))}
-      <rect x="11" y="30" width="42" height="9" rx="2.5" fill="var(--on-gold)" />
-      <rect x="12.5" y="31.5" width="39" height="6" rx="1.5" fill="none" stroke="var(--gold-light)" strokeWidth=".9" />
-      <circle cx="32" cy="34.5" r="2.2" fill="var(--gold-light)" />
-    </svg>
+    <span
+      className={cn('inline-grid shrink-0 place-items-center overflow-hidden rounded-full', !plain && 'bg-[#F6EBD7] shadow-[0_0_0_1px_rgba(191,128,53,.35)]', className)}
+      style={{ width: size, height: size }}
+      aria-hidden
+    >
+      <img src="/logo-256.webp" alt="" width={size} height={size} decoding="async" className={cn('object-contain', plain ? 'size-full' : 'size-[86%]')} />
+    </span>
   )
 }
 

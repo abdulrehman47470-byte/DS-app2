@@ -5,6 +5,8 @@ import { Button, Chip, Field, Input, Select, Sheet, Textarea } from '@/component
 import { LOUNGES } from '@/data/mock/content'
 import { cn } from '@/lib/cn'
 import { useApp } from '@/lib/store'
+import { deleteMedia, saveMedia, shrinkToBlob } from '@/lib/media'
+import { MediaImg, UploadedVideo } from '@/components/Media'
 import { isAllowedMusic, isAllowedVideo } from './embeds'
 import { checkContent } from './moderation'
 import { SmokeReportForm, EMPTY_REPORT } from './SmokeReportForm'
@@ -14,23 +16,6 @@ import { TOPICS, type Post, type PostType, type SmokeReport } from './types'
 const VIDEO_MAX_MB = 50
 const VIDEO_MAX_SECONDS = 30
 const VIDEO_UPLOADS_ENABLED = true // TODO(phase 10): app_config switch to keep links only
-
-function shrink(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const img = new Image()
-    img.onload = () => {
-      const s = Math.min(1, 1080 / Math.max(img.width, img.height))
-      const c = document.createElement('canvas')
-      c.width = img.width * s
-      c.height = img.height * s
-      c.getContext('2d')!.drawImage(img, 0, 0, c.width, c.height)
-      resolve(c.toDataURL('image/jpeg', 0.75))
-      URL.revokeObjectURL(img.src)
-    }
-    img.onerror = () => reject(new Error('unsupported'))
-    img.src = URL.createObjectURL(file)
-  })
-}
 
 function videoDuration(url: string): Promise<number> {
   return new Promise((resolve) => {
@@ -78,7 +63,7 @@ export function Composer({ open, onClose, initialType = 'update', initialSmoke }
   const addPhotos = async (e: ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []).slice(0, 6 - photos.length)
     e.target.value = ''
-    const results = await Promise.allSettled(files.filter((f) => f.type.startsWith('image/')).map(shrink))
+    const results = await Promise.allSettled(files.filter((f) => f.type.startsWith('image/')).map(async (f) => saveMedia(await shrinkToBlob(f, 1280, 0.8))))
     const urls = results.flatMap((r) => (r.status === 'fulfilled' ? [r.value] : []))
     if (urls.length < results.length) setError('Some photos couldn’t be read. Please use JPG or PNG.')
     setPhotos((p) => [...p, ...urls].slice(0, 6))
@@ -90,13 +75,13 @@ export function Composer({ open, onClose, initialType = 'update', initialSmoke }
     if (!f) return
     if (!['video/mp4', 'video/quicktime', 'video/webm'].includes(f.type)) return setError('Videos must be MP4, MOV or WebM.')
     if (f.size > VIDEO_MAX_MB * 1024 * 1024) return setError(`Videos must be under ${VIDEO_MAX_MB} MB.`)
-    const url = URL.createObjectURL(f)
-    if ((await videoDuration(url)) > VIDEO_MAX_SECONDS + 0.5) {
-      URL.revokeObjectURL(url)
-      return setError(`Clips can be up to ${VIDEO_MAX_SECONDS} seconds.`)
-    }
+    const probe = URL.createObjectURL(f)
+    const seconds = await videoDuration(probe)
+    URL.revokeObjectURL(probe)
+    if (seconds > VIDEO_MAX_SECONDS + 0.5) return setError(`Clips can be up to ${VIDEO_MAX_SECONDS} seconds.`)
     setError(undefined)
-    setVideoUrl(url)
+    // Stored on the device as-is: shows instantly, survives reloads.
+    setVideoUrl(await saveMedia(f))
   }
 
   const submit = () => {
@@ -108,9 +93,7 @@ export function Composer({ open, onClose, initialType = 'update', initialSmoke }
     if (type === 'event' && !eventId) return setError('Choose an event to share.')
     if (videoMode === 'link' && videoUrl && !isAllowedVideo(videoUrl)) return setError('Use a YouTube or Vimeo link.')
     if (music && !isAllowedMusic(music)) return setError('Use a Spotify, Apple Music, YouTube or SoundCloud link.')
-    if (!text.trim() && type !== 'smoke' && type !== 'event' && !photos.length) return setError('Write something first.')
-
-    const myCount = c.posts.filter((p) => p.authorId === 'me').length
+    if (!text.trim() && type !== 'smoke' && type !== 'event' && !photos.length && !videoUrl) return setError('Write something or add a photo or video.')
     const post: Post = {
       id: `p${Date.now()}`,
       authorId: 'me',
@@ -129,10 +112,11 @@ export function Composer({ open, onClose, initialType = 'update', initialSmoke }
       reactions: {},
       reactors: [],
       comments: [],
-      pendingReview: myCount < c.reviewFirstPosts,
+      // Published instantly (client request). Moderation still applies via the content filter and reports.
+      pendingReview: false,
     }
     setC((s) => ({ posts: [post, ...s.posts], postsToday: s.postsToday + 1 }))
-    toast(post.pendingReview ? 'Posted! Your first posts are reviewed before others see them.' : 'Posted')
+    toast('Posted')
     reset()
     onClose()
   }
@@ -210,8 +194,8 @@ export function Composer({ open, onClose, initialType = 'update', initialSmoke }
         <div className="mt-3 grid grid-cols-3 gap-2">
           {photos.map((p, i) => (
             <div key={i} className="relative aspect-square overflow-hidden rounded-xl">
-              <img src={p} alt="" className="size-full object-cover" />
-              <button type="button" onClick={() => setPhotos(photos.filter((_, j) => j !== i))} aria-label="Remove photo" className="absolute right-1 top-1 grid size-7 place-items-center rounded-full bg-black/60 text-white"><X size={14} /></button>
+              <MediaImg src={p} className="size-full object-cover" />
+              <button type="button" onClick={() => { deleteMedia(p); setPhotos(photos.filter((_, j) => j !== i)) }} aria-label="Remove photo" className="absolute right-1 top-1 grid size-7 place-items-center rounded-full bg-black/60 text-white"><X size={14} /></button>
             </div>
           ))}
         </div>
@@ -226,7 +210,10 @@ export function Composer({ open, onClose, initialType = 'update', initialSmoke }
           {videoMode === 'link' ? (
             <Input value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} placeholder="https://youtube.com/watch?v=…" aria-label="Video link" />
           ) : videoUrl ? (
-            <video src={videoUrl} muted playsInline controls className="aspect-video w-full rounded-xl bg-black" />
+            <div className="relative">
+              <UploadedVideo src={videoUrl} />
+              <button type="button" onClick={() => { deleteMedia(videoUrl); setVideoUrl('') }} className="absolute left-2 top-2 rounded-full bg-black/60 px-2.5 py-1 text-xs font-semibold text-white">Remove</button>
+            </div>
           ) : (
             <Button variant="secondary" block icon={Upload} onClick={() => videoRef.current?.click()}>Choose a clip (max {VIDEO_MAX_SECONDS}s, {VIDEO_MAX_MB} MB)</Button>
           )}

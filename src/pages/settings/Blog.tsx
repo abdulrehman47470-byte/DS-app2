@@ -13,10 +13,12 @@ import { cn } from '@/lib/cn'
 import { useApp } from '@/lib/store'
 import { Still } from './Content'
 import { Markdown } from './Legal'
+import { MediaImg } from '@/components/Media'
+import { deleteMedia, saveMedia, shrinkToBlob } from '@/lib/media'
 
 function Cover({ a, className }: { a: Article; className?: string }) {
   return a.cover.src ? (
-    <img src={a.cover.src} alt="" className={cn('object-cover', className)} />
+    <MediaImg src={a.cover.src} className={cn('object-cover', className)} />
   ) : (
     <Still tone={a.cover.tone ?? 30} variant={a.id.length} className={className} />
   )
@@ -170,7 +172,7 @@ export function BlogPost() {
         a.authorId === 'me' ? (
           <div className="flex">
             <Link to={`/settings/blog/edit/${a.id}`} aria-label="Edit article" className="grid size-11 place-items-center rounded-full hover:bg-surface-2"><Pencil size={19} /></Link>
-            <button aria-label="Delete article" onClick={() => { setC((s) => ({ articles: s.articles.filter((x) => x.id !== a.id) })); toast('Article deleted'); nav('/settings/blog') }} className="grid size-11 place-items-center rounded-full text-danger hover:bg-danger/10"><Trash2 size={19} /></button>
+            <button aria-label="Delete article" onClick={() => { deleteMedia(a.cover.src); setC((s) => ({ articles: s.articles.filter((x) => x.id !== a.id) })); toast('Article deleted'); nav('/settings/blog') }} className="grid size-11 place-items-center rounded-full text-danger hover:bg-danger/10"><Trash2 size={19} /></button>
           </div>
         ) : a.authorId !== 'staff' ? (
           <button aria-label="Report article" onClick={() => setReport(true)} className="grid size-11 place-items-center rounded-full hover:bg-surface-2"><Flag size={18} /></button>
@@ -214,23 +216,6 @@ export function BlogPost() {
   )
 }
 
-function coverFromFile(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const img = new Image()
-    img.onload = () => {
-      const s = Math.min(1, 1200 / img.width)
-      const cv = document.createElement('canvas')
-      cv.width = img.width * s
-      cv.height = img.height * s
-      cv.getContext('2d')!.drawImage(img, 0, 0, cv.width, cv.height)
-      resolve(cv.toDataURL('image/jpeg', 0.75))
-      URL.revokeObjectURL(img.src)
-    }
-    img.onerror = () => reject(new Error('unsupported'))
-    img.src = URL.createObjectURL(file)
-  })
-}
-
 export function BlogEditor() {
   const { id } = useParams()
   const nav = useNavigate()
@@ -270,7 +255,8 @@ export function BlogEditor() {
     if (!f.type.startsWith('image/')) return setError('Please choose an image file (JPG or PNG).')
     if (f.size > 15 * 1024 * 1024) return setError('That image is over 15 MB. Please choose a smaller one.')
     try {
-      setCover({ src: await coverFromFile(f) })
+      if (cover.src && cover.src !== existing?.cover.src) deleteMedia(cover.src)
+      setCover({ src: await saveMedia(await shrinkToBlob(f, 1400, 0.8)) })
       setError(undefined)
     } catch {
       setError('We couldn’t read that image. Please use a JPG or PNG (iPhone HEIC photos aren’t supported yet).')
@@ -311,7 +297,7 @@ export function BlogEditor() {
       } />
       <div className="space-y-4 px-4">
         <button type="button" onClick={() => fileRef.current?.click()} className="group relative block h-44 w-full overflow-hidden rounded-[20px] border border-line" aria-label="Change cover image">
-          {cover.src ? <img src={cover.src} alt="" className="size-full object-cover" /> : <Still tone={cover.tone ?? 26} className="size-full" />}
+          {cover.src ? <MediaImg src={cover.src} className="size-full object-cover" /> : <Still tone={cover.tone ?? 26} className="size-full" />}
           <span className="absolute inset-0 grid place-items-center bg-black/25 opacity-90 transition group-hover:bg-black/40">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-black/50 px-3 py-1.5 text-sm font-semibold text-white backdrop-blur"><ImagePlus size={16} /> {cover.src ? 'Change cover' : 'Add cover photo'}</span>
           </span>

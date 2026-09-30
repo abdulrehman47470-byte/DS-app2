@@ -1,5 +1,6 @@
 import { ExternalLink, Music2, Play } from 'lucide-react'
 import { useState } from 'react'
+import { UploadedVideo } from '@/components/Media'
 
 /** Official embed URLs only: no scraping, no audio hosting. */
 export function musicEmbed(raw: string): { provider: string; src: string; height: number } | null {
@@ -59,6 +60,7 @@ export function isAllowedVideo(url: string) {
 export function MusicCard({ url }: { url: string }) {
   const e = musicEmbed(url)
   const [failed, setFailed] = useState(false)
+  const [loaded, setLoaded] = useState(false)
   if (!e || failed)
     return (
       <a href={url} target="_blank" rel="noreferrer noopener" className="flex items-center gap-3 rounded-2xl border border-line bg-surface-2 p-3 text-sm">
@@ -67,6 +69,24 @@ export function MusicCard({ url }: { url: string }) {
         <ExternalLink size={15} className="text-ink-muted" />
       </a>
     )
+  // Tap-to-load: the provider's player (≈1 MB of third-party script) only loads when asked,
+  // so a music post never slows down scrolling or the next screen.
+  if (!loaded)
+    return (
+      <button
+        onClick={() => setLoaded(true)}
+        style={{ height: e.height }}
+        className="flex w-full items-center gap-3 overflow-hidden rounded-2xl border border-line bg-gradient-to-r from-[#2a1a10] to-[#4a2c16] px-4 text-left text-white"
+        aria-label={`Play on ${e.provider}`}
+      >
+        <span className="grid size-12 shrink-0 place-items-center rounded-full bg-[#1db954] text-black"><Play size={20} className="ml-0.5 fill-current" /></span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-semibold">Play on {e.provider}</span>
+          <span className="block truncate text-xs text-white/60">{url.replace(/^https?:\/\/(www\.)?/, '')}</span>
+        </span>
+        <Music2 size={18} className="shrink-0 text-[#E7B468]" />
+      </button>
+    )
   return (
     <div className="overflow-hidden rounded-2xl border border-line">
       <iframe
@@ -74,7 +94,6 @@ export function MusicCard({ url }: { url: string }) {
         src={e.src}
         height={e.height}
         className="block w-full"
-        loading="lazy"
         allow="autoplay; clipboard-write; encrypted-media; picture-in-picture"
         onError={() => setFailed(true)}
       />
@@ -85,8 +104,7 @@ export function MusicCard({ url }: { url: string }) {
 /** Never autoplays with sound: link videos load only on tap; uploads are muted inline. */
 export function VideoCard({ video }: { video: { kind: 'link' | 'upload'; url: string } }) {
   const [play, setPlay] = useState(false)
-  if (video.kind === 'upload')
-    return <video src={video.url} controls muted playsInline preload="metadata" className="aspect-video w-full rounded-2xl bg-black" />
+  if (video.kind === 'upload') return <UploadedVideo src={video.url} />
   const e = videoEmbed(video.url)
   if (!e) return <MusicCard url={video.url} />
   return (

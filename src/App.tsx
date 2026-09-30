@@ -116,17 +116,32 @@ export function ScreenFallback() {
 
 function usePrefetchScreens() {
   useEffect(() => {
+    const done = () => {
+      window.dispatchEvent(new Event('ds:prefetched'))
+    }
     const conn = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection
-    if (conn?.saveData) return // respect data saver
+    if (conn?.saveData) {
+      done() // respect data saver
+      return
+    }
     const run = () => {
-      const order: Loader[] = ['Discover', 'SignIn', 'Verify', 'Gates', 'MyProfile', 'Social', 'Chat', 'MemberProfile', 'Settings', 'Blog', 'ProfileWizard', 'StogieSearch', 'Sessions', 'Events', 'Extras', 'Journal', 'Legal', 'Screens', 'Admin']
+      // Five main tabs first, then everything else.
+      const order: Loader[] = ['Discover', 'Social', 'MyProfile', 'Chat', 'MemberProfile', 'Settings', 'SignIn', 'Verify', 'Gates', 'Blog', 'ProfileWizard', 'StogieSearch', 'Sessions', 'Events', 'Extras', 'Journal', 'Legal', 'Screens', 'Admin']
       // Three at a time: quick to finish, still gentle on the screen that is open.
       let i = 0
+      let active = 0
       const next = () => {
-        if (i >= order.length) return
+        if (i >= order.length) {
+          if (active === 0) done()
+          return
+        }
+        active++
         load(order[i++])
           .catch(() => {})
-          .finally(next)
+          .finally(() => {
+            active--
+            next()
+          })
       }
       next()
       next()

@@ -139,6 +139,13 @@ export function EventDetail() {
           ))}
         </div>
         {full && <p className="mt-2 text-xs text-warning">This event is full.</p>}
+        {e.hostId === 'me' && (
+          <Button variant="danger" size="sm" className="mt-3" onClick={() => {
+            setC((s) => ({ events: s.events.filter((x) => x.id !== e.id) }))
+            toast('Event cancelled. Attendees will be notified.')
+            nav('/events')
+          }}>Cancel this event</Button>
+        )}
 
         <div className="mt-3 grid grid-cols-3 gap-2">
           <Button size="sm" variant="secondary" icon={CalendarPlus} onClick={() => ics(e)}>Calendar</Button>

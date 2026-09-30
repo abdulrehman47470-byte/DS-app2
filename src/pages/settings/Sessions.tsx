@@ -12,6 +12,8 @@ import type { MemberVideo } from '@/features/community/types'
 import { ReportSheet } from '@/features/safety'
 import { getSessions } from '@/lib/api'
 import { useApp } from '@/lib/store'
+import { deleteMedia, saveMedia } from '@/lib/media'
+import { UploadedVideo } from '@/components/Media'
 import { Still } from './Content'
 
 const CATS = ['All', 'Basics', 'Tasting', 'Pairing', 'Humidor', 'Lounges', 'Reviews']
@@ -111,7 +113,7 @@ export function SessionDetail() {
     <div className="flex flex-1 flex-col pb-8">
       <TopBar back="/settings/sessions" title={v.title} right={
         member?.authorId === 'me' ? (
-          <button aria-label="Delete video" onClick={() => { setC((s) => ({ videos: s.videos.filter((x) => x.id !== id) })); toast('Video deleted'); nav('/settings/sessions') }} className="grid size-11 place-items-center rounded-full text-danger hover:bg-danger/10"><Trash2 size={19} /></button>
+          <button aria-label="Delete video" onClick={() => { if (member?.video.kind === 'upload') deleteMedia(member.video.url); setC((s) => ({ videos: s.videos.filter((x) => x.id !== id) })); toast('Video deleted'); nav('/settings/sessions') }} className="grid size-11 place-items-center rounded-full text-danger hover:bg-danger/10"><Trash2 size={19} /></button>
         ) : member ? (
           <button aria-label="Report video" onClick={() => setReport(true)} className="grid size-11 place-items-center rounded-full hover:bg-surface-2"><Flag size={18} /></button>
         ) : null
@@ -183,14 +185,14 @@ function SubmitVideoSheet({ open, onClose }: { open: boolean; onClose: () => voi
   const [error, setError] = useState<string>()
   const ref = useRef<HTMLInputElement>(null)
 
-  const onFile = (e: ChangeEvent<HTMLInputElement>) => {
+  const onFile = async (e: ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0]
     e.target.value = ''
     if (!f) return
     if (!['video/mp4', 'video/quicktime', 'video/webm'].includes(f.type)) return setError('Videos must be MP4, MOV or WebM.')
     if (f.size > 50 * 1024 * 1024) return setError('Uploads must be under 50 MB. For longer videos, share a YouTube or Vimeo link.')
     setError(undefined)
-    setUrl(URL.createObjectURL(f))
+    setUrl(await saveMedia(f))
   }
 
   const submit = () => {
@@ -208,19 +210,20 @@ function SubmitVideoSheet({ open, onClose }: { open: boolean; onClose: () => voi
       video: { kind: mode, url },
       tone: 18 + Math.floor(Math.random() * 26),
       at: 'now',
-      pendingReview: true,
+      // Published instantly (client request); reports and the content filter still apply.
+      pendingReview: false,
       reactions: {},
       reactors: [],
     }
     setC((s) => ({ videos: [v, ...s.videos] }))
-    toast('Submitted! Videos are reviewed before they go live.')
+    toast('Video published')
     setTitle(''); setDesc(''); setUrl('')
     onClose()
     nav(`/settings/sessions/${v.id}`)
   }
 
   return (
-    <Sheet open={open} onClose={onClose} title="Share a Stogie Session" footer={<><p className="mb-2 text-sm text-danger" role="alert">{error}</p><Button block size="lg" onClick={submit}>Submit video</Button></>}>
+    <Sheet open={open} onClose={onClose} title="Share a Stogie Session" footer={<><p className="mb-2 text-sm text-danger" role="alert">{error}</p><Button block size="lg" onClick={submit}>Publish video</Button></>}>
       <div className="space-y-4 pb-2">
         <div className="flex gap-2">
           <Chip selected={mode === 'link'} onClick={() => { setMode('link'); setUrl('') }}><Link2 size={13} /> YouTube / Vimeo</Chip>
@@ -229,14 +232,17 @@ function SubmitVideoSheet({ open, onClose }: { open: boolean; onClose: () => voi
         {mode === 'link' ? (
           <Field label="Video link" htmlFor="v-url"><Input id="v-url" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://youtube.com/watch?v=…" /></Field>
         ) : url ? (
-          <video src={url} controls muted playsInline className="aspect-video w-full rounded-xl bg-black" />
+          <div className="relative">
+            <UploadedVideo src={url} />
+            <button type="button" onClick={() => { deleteMedia(url); setUrl('') }} className="absolute left-2 top-2 rounded-full bg-black/60 px-2.5 py-1 text-xs font-semibold text-white">Remove</button>
+          </div>
         ) : (
           <Button variant="secondary" block icon={Upload} onClick={() => ref.current?.click()}>Choose a video (MP4, MOV, WebM · 50 MB)</Button>
         )}
         <Field label="Title" htmlFor="v-title"><Input id="v-title" value={title} maxLength={100} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. How I season a new humidor" /></Field>
         <Field label="Category" htmlFor="v-cat"><Select id="v-cat" value={category} onChange={(e) => setCategory(e.target.value)}>{CATS.slice(1).map((x) => <option key={x}>{x}</option>)}</Select></Field>
         <Field label="Description" htmlFor="v-desc" optional><Textarea id="v-desc" value={desc} maxLength={600} onChange={(e) => setDesc(e.target.value)} /></Field>
-        <p className="text-xs text-ink-muted">Videos are reviewed before other members see them. No selling or advertising tobacco, and nobody under 21 on camera.</p>
+        <p className="text-xs text-ink-muted">Your video goes live straight away. No selling or advertising tobacco, and nobody under 21 on camera.</p>
       </div>
       <input ref={ref} type="file" accept="video/mp4,video/quicktime,video/webm" className="hidden" onChange={onFile} />
     </Sheet>

@@ -347,3 +347,63 @@ body {
 .page-enter-back {
   animation: page-in-back 0.18s ease-out;
 }
+
+/* ---------- Welcome / sign-in page ---------- */
+.welcome-bg {
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(120, 72, 34, 0.55), transparent 60%),
+    radial-gradient(ellipse at 50% 100%, rgba(64, 34, 14, 0.9), transparent 70%),
+    linear-gradient(180deg, #2b1a0f 0%, #1a100a 55%, #0f0906 100%);
+}
+/* scale only: centering uses the separate translate property */
+@keyframes ring-breathe {
+  0%,
+  100% {
+    scale: 1;
+  }
+  50% {
+    scale: 1.04;
+  }
+}
+.welcome-ring {
+  animation: ring-breathe 10s ease-in-out infinite;
+}
+@keyframes ember-rise {
+  0% {
+    transform: translateY(0) translateX(0);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateY(-105vh) translateX(24px);
+    opacity: 0;
+  }
+}
+.welcome-ember {
+  animation: ember-rise linear infinite;
+  box-shadow: 0 0 8px 2px rgba(242, 197, 124, 0.55);
+}
+@keyframes welcome-in {
+  from {
+    opacity: 0.4;
+    transform: translateY(10px);
+  }
+}
+.welcome-in {
+  animation: welcome-in 0.4s ease-out;
+}
+
+/* Mock Google sign-in: indeterminate progress bar */
+@keyframes gsi-progress {
+  from {
+    transform: translateX(-110%);
+  }
+  to {
+    transform: translateX(320%);
+  }
+}
+.gsi-progress {
+  animation: gsi-progress 1s ease-in-out infinite;
+}

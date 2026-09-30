@@ -26,7 +26,7 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       injectRegister: false, // registered in src/lib/pwa.ts so updates reload the page
-      includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
+      includeAssets: ['favicon-64.png', 'apple-touch-icon.png', 'logo-256.webp'],
       manifest: {
         name: 'Daily Stogie',
         short_name: 'Daily Stogie',
@@ -44,7 +44,9 @@ export default defineConfig({
       },
       workbox: {
         // Only the Latin woff2 fonts the app uses; other alphabets load on demand if ever needed.
-        globPatterns: ['**/*.{js,css,html,svg,png}', '**/*-latin-[0-9]*.woff2'],
+        globPatterns: ['**/*.{js,css,html,svg,png,webp}', '**/*-latin-[0-9]*.woff2'],
+        // Large install-only images aren't needed offline.
+        globIgnores: ['**/logo-512.png', '**/pwa-512.png', '**/apple-touch-icon.png'],
         navigateFallback: '/index.html',
         navigateFallbackDenylist: [/^\/assets\//],
         cleanupOutdatedCaches: true,
@@ -82,7 +84,9 @@ export default defineConfig({
             // (The Leaflet map component stays out, so the map library only loads on map screens.)
             {
               name: 'app',
-              test: (id: string) => /[\\/]src[\\/](components|lib|data|features|types)[\\/]/.test(id) && !/LoungeMap/.test(id),
+              // Sign-in/checkout windows stay with the screens that use them.
+              test: (id: string) =>
+                /[\\/]src[\\/](components|lib|data|features|types)[\\/]/.test(id) && !/LoungeMap|features[\\/](auth|payments)[\\/]/.test(id),
               priority: 10,
             },
           ],

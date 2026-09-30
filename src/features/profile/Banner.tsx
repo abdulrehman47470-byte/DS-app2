@@ -3,11 +3,14 @@ import { useRef, useState, type ChangeEvent, type ReactNode } from 'react'
 import { Button, Sheet } from '@/components/ui'
 import { BANNERS } from '@/data/mock/memberContent'
 import { cn } from '@/lib/cn'
+import { deleteMedia, saveMedia, useMedia } from '@/lib/media'
 
 export type BannerValue = { preset?: string; src?: string }
 
-export function bannerStyle(b: BannerValue) {
-  if (b.src) return { backgroundImage: `url(${b.src})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+export function bannerStyle(b: BannerValue, resolved?: string) {
+  const url = resolved ?? (b.src?.startsWith('idb:') ? undefined : b.src)
+  if (url) return { backgroundImage: `url(${url})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+  if (b.src) return { background: '#3a2414' } // stored upload still loading
   return { background: BANNERS[b.preset ?? 'leather']?.css ?? BANNERS.leather.css }
 }
 
@@ -16,8 +19,9 @@ const DARK_PRESETS = Object.keys(BANNERS).filter((k) => k !== 'cream')
 export const presetForTone = (tone: number) => DARK_PRESETS[tone % DARK_PRESETS.length]
 
 export function ProfileBanner({ value, className, children, onEdit }: { value: BannerValue; className?: string; children?: ReactNode; onEdit?: () => void }) {
+  const resolved = useMedia(value.src)
   return (
-    <div className={cn('relative h-44 overflow-hidden', className)} style={bannerStyle(value)}>
+    <div className={cn('relative h-44 overflow-hidden', className)} style={bannerStyle(value, resolved)}>
       <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-transparent to-black/35" />
       {onEdit && (
         <button
@@ -33,7 +37,7 @@ export function ProfileBanner({ value, className, children, onEdit }: { value: B
   )
 }
 
-function toBannerDataUrl(file: File): Promise<string> {
+function toBannerBlob(file: File): Promise<Blob> {
   return new Promise((resolve, reject) => {
     const img = new Image()
     img.onload = () => {
@@ -48,7 +52,7 @@ function toBannerDataUrl(file: File): Promise<string> {
       const dw = img.width * scale
       const dh = img.height * scale
       ctx.drawImage(img, (w - dw) / 2, (h - dh) / 2, dw, dh)
-      resolve(c.toDataURL('image/jpeg', 0.75))
+      c.toBlob((b) => (b ? resolve(b) : reject(new Error('unsupported'))), 'image/jpeg', 0.8)
       URL.revokeObjectURL(img.src)
     }
     img.onerror = () => reject(new Error('unsupported'))
@@ -56,7 +60,13 @@ function toBannerDataUrl(file: File): Promise<string> {
   })
 }
 
-export function BannerEditor({ open, onClose, value, onChange }: { open: boolean; onClose: () => void; value: BannerValue; onChange: (v: BannerValue) => void }) {
+export function BannerEditor({ open, onClose, value, onChange: set }: { open: boolean; onClose: () => void; value: BannerValue; onChange: (v: BannerValue) => void }) {
+  const resolved = useMedia(value.src)
+  // Switching to a preset or removing the photo also removes the stored upload.
+  const onChange = (v: BannerValue) => {
+    if (value.src && v.src !== value.src && !v.src) deleteMedia(value.src)
+    set(v)
+  }
   const ref = useRef<HTMLInputElement>(null)
   const [error, setError] = useState<string>()
   const onFile = async (e: ChangeEvent<HTMLInputElement>) => {
@@ -67,14 +77,16 @@ export function BannerEditor({ open, onClose, value, onChange }: { open: boolean
     if (f.size > 15 * 1024 * 1024) return setError('Images must be under 15 MB.')
     setError(undefined)
     try {
-      onChange({ src: await toBannerDataUrl(f) })
+      const old = value.src
+      onChange({ src: await saveMedia(await toBannerBlob(f)) })
+      deleteMedia(old)
     } catch {
       setError('We couldn’t read that image. Please use a JPG or PNG.')
     }
   }
   return (
     <Sheet open={open} onClose={onClose} title="Profile banner" footer={<Button block onClick={onClose}>Done</Button>}>
-      <div className="h-28 overflow-hidden rounded-2xl border border-line" style={bannerStyle(value)} />
+      <div className="h-28 overflow-hidden rounded-2xl border border-line" style={bannerStyle(value, resolved)} />
       {error && <p className="mt-2 text-sm text-danger">{error}</p>}
       <div className="mt-3 grid grid-cols-2 gap-2">
         <Button variant="secondary" icon={ImagePlus} onClick={() => ref.current?.click()}>Upload photo</Button>

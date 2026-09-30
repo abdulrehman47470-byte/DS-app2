@@ -10,6 +10,7 @@ import { leaderboard, LEVELS, POINT_RULES, pointsFor } from '@/features/communit
 import { useCommunity } from '@/features/community/store'
 import { Still } from '@/pages/settings/Content'
 import { cn } from '@/lib/cn'
+import { MediaImg } from '@/components/Media'
 import { useApp } from '@/lib/store'
 
 const LEVEL_TONE: Record<string, string> = {
@@ -182,7 +183,7 @@ export function Activity({ who, name }: { who: string; name: string }) {
       {current === 'articles' && (articles.length ? (
         <ul className="space-y-2">{articles.map((a) => (
           <li key={a.id}><Link to={`/settings/blog/${a.slug}`} className="flex items-center gap-3 rounded-2xl p-1.5 hover:bg-surface-2">
-            {a.cover.src ? <img src={a.cover.src} alt="" className="h-14 w-16 shrink-0 rounded-xl object-cover" /> : <Still tone={a.cover.tone ?? 30} className="h-14 w-16 shrink-0 rounded-xl" />}
+            {a.cover.src ? <MediaImg src={a.cover.src} className="h-14 w-16 shrink-0 rounded-xl object-cover" /> : <Still tone={a.cover.tone ?? 30} className="h-14 w-16 shrink-0 rounded-xl" />}
             <span className="min-w-0"><span className="line-clamp-2 font-serif text-[15px] leading-tight">{a.title}</span><span className="text-xs text-ink-muted">{a.at} · {a.readMins} min{a.pendingReview ? ' · In review' : ''}</span></span>
           </Link></li>
         ))}</ul>

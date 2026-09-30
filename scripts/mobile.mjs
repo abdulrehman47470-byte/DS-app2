@@ -12,7 +12,9 @@ for (const [name, bt, dev] of [['iPhone/WebKit', webkit, devices['iPhone 13']], 
   const snap = async (label) => console.log(name, label, '|', p.url().replace(BASE, ''), '|', ((await p.locator('#root').innerText().catch(() => '')).replace(/\s+/g, ' ').slice(0, 60)) || '<<BLANK>>')
   try {
     await p.goto(BASE + '/signup'); await p.waitForTimeout(800)
-    await p.getByRole('button', { name: /Continue with Google/ }).click(); await p.waitForTimeout(800)
+    await p.getByRole('button', { name: /Continue with Google/ }).click()
+    await p.getByRole('dialog').getByRole('button', { name: /@gmail/ }).click()
+    await p.getByRole('dialog').getByRole('button', { name: 'Continue' }).click(); await p.waitForTimeout(1500)
     await p.getByLabel('Month').selectOption('3'); await p.getByLabel('Day').selectOption('15'); await p.getByLabel('Year').selectOption('1990')
     await p.getByRole('button', { name: 'Continue' }).click(); await p.waitForTimeout(1200); await snap('identity')
     await p.getByRole('checkbox').check()
