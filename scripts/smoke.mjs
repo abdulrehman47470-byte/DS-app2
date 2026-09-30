@@ -34,6 +34,19 @@ await step('Discover: tab order is Lounge Feed then People', async () => {
   if (tabs[0] !== 'Lounge Feed' || tabs[1] !== 'People') throw new Error(`tabs are ${JSON.stringify(tabs)}`)
 })
 
+await step('Discover: opens on Lounge Feed by default', async () => {
+  await page.goto(BASE + '/discover')
+  const selected = await page.getByRole('tab', { selected: true }).first().innerText()
+  if (selected !== 'Lounge Feed') throw new Error(`default tab is ${selected}`)
+  await page.getByText('Share something with the lounge').waitFor({ timeout: 3000 })
+})
+
+await step('Discover: People tab shows the swipe deck', async () => {
+  await page.getByRole('tab', { name: 'People' }).click()
+  await page.getByRole('button', { name: 'Like' }).waitFor({ timeout: 3000 })
+  if (!page.url().includes('view=people')) throw new Error('People view not in URL')
+})
+
 await step('Profile: edit banner (upload)', async () => {
   await page.goto(BASE + '/profile')
   await page.getByRole('button', { name: 'Change banner' }).click({ timeout: 3000 })

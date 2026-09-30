@@ -11,7 +11,7 @@ const GROUPS: [string, [string, string][]][] = [
     ['Profile 1: Demographics', '/onboarding/1'], ['Profile 2: Stogie Preferences', '/onboarding/2'], ['Profile 3: About You', '/onboarding/3'],
   ]],
   ['Main tabs', [
-    ['Discover', '/discover'], ['Member profile', '/member/m1'], ['Mentors', '/mentors'], ['Matches', '/matches'],
+    ['Discover (People)', '/discover?view=people'], ['Member profile', '/member/m1'], ['Mentors', '/mentors'], ['Matches', '/matches'],
     ['Messages', '/messages'], ['Chat', '/messages/m1'], ['My profile', '/profile'], ['Edit profile', '/profile/edit/1'],
   ]],
   ['Settings', [

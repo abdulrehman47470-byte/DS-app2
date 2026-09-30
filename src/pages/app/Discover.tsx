@@ -30,7 +30,8 @@ export default function Discover() {
   const { state, set, toast } = useApp()
   const { c, on } = useCommunity()
   const [params, setParams] = useSearchParams()
-  const view = on('community_feed') && params.get('view') === 'feed' ? 'feed' : 'people'
+  // Lounge Feed is the default Discover view; People is opened with ?view=people.
+  const view = on('community_feed') && params.get('view') !== 'people' ? 'feed' : 'people'
   const unread = c.notifications.filter((n) => !c.readNotifications.includes(n.id) && c.notificationSettings[n.type]).length
   const exclude = useMemo(() => [...state.blocked], [state.blocked])
   const q = useQuery({
@@ -141,7 +142,7 @@ export default function Discover() {
         <div className="px-4 pb-2">
           <Segmented
             value={view}
-            onChange={(v) => setParams(v === 'feed' ? { view: 'feed' } : {}, { replace: true })}
+            onChange={(v) => setParams(v === 'people' ? { view: 'people' } : {}, { replace: true })}
             options={[
               { value: 'feed', label: 'Lounge Feed' },
               { value: 'people', label: 'People' },

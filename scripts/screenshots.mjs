@@ -10,7 +10,7 @@ const ROUTES = [
   '/matches', '/messages', '/messages/m1', '/profile', '/settings', '/settings/search', '/settings/sessions',
   '/settings/sessions/s1', '/settings/blog', '/settings/blog/perfect-cigar-pairing', '/legal/terms',
   '/settings/refer', '/settings/delete', '/admin', '/states', '/screens',
-  '/discover?view=feed', '/events', '/events/e1', '/journal', '/notifications', '/pairing', '/nearby', '/passport', '/travel', '/messages/m9', '/settings/blog/three-years-in-the-cabinet', '/settings/blog/write', '/settings/sessions/v1',
+  '/discover?view=people', '/events', '/events/e1', '/journal', '/notifications', '/pairing', '/nearby', '/passport', '/travel', '/messages/m9', '/settings/blog/three-years-in-the-cabinet', '/settings/blog/write', '/settings/sessions/v1',
 ]
 const filter = process.argv[2]
 const sizes = [['phone', 390, 844], ['desktop', 1280, 800]]
