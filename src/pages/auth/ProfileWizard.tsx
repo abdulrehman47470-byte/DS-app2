@@ -1,5 +1,5 @@
 import { EyeOff, Lock, Search } from 'lucide-react'
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { ProgressBar } from '@/components/layout'
 import { Button, Chip, Field, Input, Select, Textarea, Toggle, TopBar } from '@/components/ui'
@@ -63,7 +63,7 @@ export default function ProfileWizard({ edit }: { edit?: boolean }) {
         {step === 3 && <StepAbout />}
       </div>
 
-      <div className="sticky bottom-0 z-20 flex gap-3 border-t border-line bg-bg/90 px-6 pb-[max(16px,env(safe-area-inset-bottom))] pt-3 backdrop-blur-md">
+      <div className="sticky bottom-0 z-20 flex gap-3 border-t border-line bg-bg/90 px-6 pb-[max(16px,env(safe-area-inset-bottom))] pt-3">
         {step > 1 && (
           <Button variant="secondary" size="lg" className="flex-1" onClick={() => go(step - 1)}>
             Back
@@ -184,7 +184,7 @@ function StepDemographics() {
 
 function StepPreferences() {
   const { state, set } = useApp()
-  const setPref = (id: string, v: string | string[]) => set((s) => ({ prefs: { ...s.prefs, [id]: v } }))
+  const setPref = useCallback((id: string, v: string | string[]) => set((s) => ({ prefs: { ...s.prefs, [id]: v } })), [set])
   const summary = (ids: string[]) =>
     ids
       .flatMap((id) => {
@@ -200,7 +200,7 @@ function StepPreferences() {
       {PREF_SECTIONS.map((sec, i) => (
         <Collapsible key={sec.id} title={sec.title} summary={summary(sec.groups.map((g) => g.id))} defaultOpen={i === 0}>
           {sec.groups.map((g) => (
-            <OptionGroupView key={g.id} group={g} value={state.prefs[g.id]} onChange={(v) => setPref(g.id, v)} />
+            <OptionGroupView key={g.id} group={g} value={state.prefs[g.id]} onPick={setPref} />
           ))}
           {sec.special === 'price' && (
             <div className="py-4">

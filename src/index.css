@@ -133,7 +133,6 @@ body {
     border: 1px solid var(--line);
     border-radius: var(--radius-card);
     box-shadow: var(--shadow);
-    backdrop-filter: blur(6px);
   }
   .btn-gold {
     background: linear-gradient(180deg, var(--gold-light), var(--gold) 55%, var(--gold-deep));
@@ -406,4 +405,33 @@ body {
 }
 .gsi-progress {
   animation: gsi-progress 1s ease-in-out infinite;
+}
+
+/* ---------- Smoothness ----------
+   Sections open with a short GPU-friendly fade; long lists skip rendering what is off-screen;
+   taps never wait for double-tap detection. */
+@keyframes section-open {
+  from {
+    opacity: 0.4;
+    transform: translateY(-6px);
+  }
+}
+.section-open {
+  animation: section-open 0.16s ease-out;
+}
+.cv-auto {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 420px;
+}
+button,
+a,
+[role='button'],
+input,
+select,
+textarea,
+label {
+  touch-action: manipulation;
+}
+html {
+  -webkit-text-size-adjust: 100%;
 }

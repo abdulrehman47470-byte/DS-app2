@@ -27,7 +27,7 @@ export function ProfileBanner({ value, className, children, onEdit }: { value: B
         <button
           onClick={onEdit}
           aria-label="Change banner"
-          className="absolute left-4 top-[max(16px,env(safe-area-inset-top))] z-20 inline-flex min-h-11 items-center gap-1.5 rounded-full bg-black/45 px-3.5 text-[13px] font-semibold text-white backdrop-blur hover:bg-black/60"
+          className="absolute left-4 top-[max(16px,env(safe-area-inset-top))] z-20 inline-flex min-h-11 items-center gap-1.5 rounded-full bg-black/45 px-3.5 text-[13px] font-semibold text-white hover:bg-black/60"
         >
           <Camera size={14} /> Edit banner
         </button>

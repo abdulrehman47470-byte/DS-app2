@@ -33,7 +33,7 @@ export function MatchOverlay({
           role="dialog"
           aria-modal="true"
           aria-label={`It's a match with ${member.firstName}`}
-          className="fixed inset-0 z-[60] flex items-center justify-center overflow-hidden bg-[#120b06]/92 px-8 backdrop-blur"
+          className="fixed inset-0 z-[60] flex items-center justify-center overflow-hidden bg-[#120b06]/92 px-8"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}

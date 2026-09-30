@@ -38,7 +38,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
           'border border-line-strong bg-surface-solid/60 text-ink hover:bg-surface-2',
         variant === 'ghost' && 'text-ink hover:bg-surface-2',
         variant === 'danger' && 'border border-danger/40 text-danger hover:bg-danger/10',
-        variant === 'dark' && 'border border-white/30 bg-black/25 text-white backdrop-blur hover:bg-black/40',
+        variant === 'dark' && 'border border-white/30 bg-black/25 text-white hover:bg-black/40',
         block && 'w-full',
         className,
       )}
@@ -66,15 +66,16 @@ export function Chip({
   className?: string
   highlight?: boolean
 }) {
-  const Comp = onClick ? motion.button : motion.span
+  // Plain element + CSS press effect: hundreds of chips stay cheap to render and tap.
+  const Comp = onClick ? 'button' : 'span'
   return (
     <Comp
       type={onClick ? 'button' : undefined}
-      whileTap={onClick ? { scale: 0.94 } : undefined}
       onClick={onClick}
       aria-pressed={onClick ? !!selected : undefined}
       className={cn(
-        'inline-flex items-center gap-1 whitespace-nowrap rounded-full border font-medium transition-colors',
+        'inline-flex items-center gap-1 whitespace-nowrap rounded-full border font-medium transition-[color,background-color,border-color,transform] duration-150',
+        onClick && 'active:scale-[0.94]',
         size === 'md' ? 'min-h-9 px-3.5 text-[13px]' : 'min-h-7 px-2.5 text-xs',
         onClick && size === 'md' && 'min-h-10',
         selected
@@ -110,7 +111,7 @@ export function Badge({
         tone === 'danger' && 'bg-danger/12 text-danger',
         tone === 'warning' && 'bg-warning/15 text-warning',
         tone === 'muted' && 'border border-line bg-surface-2 text-ink-muted',
-        tone === 'dark' && 'bg-black/40 text-white backdrop-blur',
+        tone === 'dark' && 'bg-black/40 text-white',
         className,
       )}
     >
@@ -257,9 +258,15 @@ export function Segmented<T extends string>({
   options: { value: T; label: ReactNode }[]
   className?: string
 }) {
-  const id = useId()
+  const index = Math.max(0, options.findIndex((o) => o.value === value))
   return (
-    <div role="tablist" className={cn('flex rounded-[14px] border border-line bg-surface-2 p-1', className)}>
+    <div role="tablist" className={cn('relative flex rounded-[14px] border border-line bg-surface-2 p-1', className)}>
+      {/* Sliding pill: pure CSS transform, never measures the page */}
+      <span
+        aria-hidden
+        className="absolute bottom-1 left-1 top-1 rounded-[11px] bg-gradient-to-b from-gold-light to-gold shadow-sm transition-transform duration-200 ease-out will-change-transform"
+        style={{ width: `calc((100% - 8px) / ${options.length})`, transform: `translateX(${index * 100}%)` }}
+      />
       {options.map((o) => (
         <button
           key={o.value}
@@ -267,17 +274,10 @@ export function Segmented<T extends string>({
           aria-selected={value === o.value}
           onClick={() => onChange(o.value)}
           className={cn(
-            'relative flex-1 rounded-[11px] px-3 py-2 text-[13px] font-semibold transition-colors',
+            'relative flex-1 rounded-[11px] px-3 py-2 text-[13px] font-semibold transition-colors duration-200',
             value === o.value ? 'text-on-gold' : 'text-ink-muted hover:text-ink',
           )}
         >
-          {value === o.value && (
-            <motion.span
-              layoutId={`seg-${id}`}
-              className="absolute inset-0 rounded-[11px] bg-gradient-to-b from-gold-light to-gold shadow-sm"
-              transition={{ type: 'spring', stiffness: 500, damping: 38 }}
-            />
-          )}
           <span className="relative">{o.label}</span>
         </button>
       ))}
@@ -303,7 +303,7 @@ export function TopBar({
   return (
     <header
       className={cn(
-        'sticky top-0 z-30 flex min-h-14 items-center gap-2 bg-bg/85 px-4 pt-[env(safe-area-inset-top)] backdrop-blur-md',
+        'sticky top-0 z-30 flex min-h-14 items-center gap-2 bg-bg/95 px-4 pt-[env(safe-area-inset-top)]',
         className,
       )}
     >
@@ -352,7 +352,7 @@ export function Sheet({
       {open && (
         <div className="fixed inset-0 z-50 flex items-end justify-center">
           <motion.div
-            className="absolute inset-0 bg-black/45 backdrop-blur-[2px]"
+            className="absolute inset-0 bg-black/45"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}

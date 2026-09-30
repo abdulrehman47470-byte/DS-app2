@@ -60,7 +60,7 @@ export default function MyProfile() {
   return (
     <div className="flex flex-1 flex-col pb-6">
       <ProfileBanner value={state.banner} onEdit={() => setBannerOpen(true)}>
-        <Link to="/settings" aria-label="Settings" className="absolute right-4 top-[max(16px,env(safe-area-inset-top))] grid size-11 place-items-center rounded-full bg-black/30 text-white backdrop-blur hover:bg-black/45">
+        <Link to="/settings" aria-label="Settings" className="absolute right-4 top-[max(16px,env(safe-area-inset-top))] grid size-11 place-items-center rounded-full bg-black/30 text-white hover:bg-black/45">
           <Settings size={20} strokeWidth={1.6} />
         </Link>
       </ProfileBanner>

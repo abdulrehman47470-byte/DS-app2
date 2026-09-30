@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
-import { load, save } from './storage'
+import { load, saveSoon } from './storage'
 
 export type ThemePref = 'light' | 'dark' | 'system'
 export type VerifyStatus = 'Not Started' | 'Pending' | 'Verified' | 'Failed'
@@ -123,18 +123,12 @@ const DEFAULT_STATE: AppState = {
   blocked: [],
 }
 
-interface Toast {
-  id: number
-  text: string
-}
-
 interface Ctx {
   state: AppState
   set: (patch: Partial<AppState> | ((s: AppState) => Partial<AppState>)) => void
   reset: () => void
   resolvedTheme: 'light' | 'dark'
   toast: (text: string) => void
-  toasts: Toast[]
 }
 
 const AppCtx = createContext<Ctx | null>(null)
@@ -145,10 +139,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [systemDark, setSystemDark] = useState(
     () => typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches,
   )
-  const [toasts, setToasts] = useState<Toast[]>([])
 
   useEffect(() => {
-    save(KEY, state)
+    saveSoon(KEY, state)
   }, [state])
 
   useEffect(() => {
@@ -173,22 +166,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const reset = useCallback(() => setState((s) => ({ ...DEFAULT_STATE, theme: s.theme })), [])
 
+  // Toasts live in their own component (see <Toasts/>), so showing one never re-renders the app.
   const toast = useCallback((text: string) => {
-    const id = Date.now() + Math.random()
-    setToasts((t) => [...t, { id, text }])
-    setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), text.length > 60 ? 5000 : 2600)
+    window.dispatchEvent(new CustomEvent('ds-toast', { detail: text }))
   }, [])
 
-  useEffect(() => {
-    const onToast = (e: Event) => toast(String((e as CustomEvent).detail))
-    window.addEventListener('ds-toast', onToast)
-    return () => window.removeEventListener('ds-toast', onToast)
-  }, [toast])
-
-  const value = useMemo(
-    () => ({ state, set, reset, resolvedTheme, toast, toasts }),
-    [state, set, reset, resolvedTheme, toast, toasts],
-  )
+  const value = useMemo(() => ({ state, set, reset, resolvedTheme, toast }), [state, set, reset, resolvedTheme, toast])
   return <AppCtx.Provider value={value}>{children}</AppCtx.Provider>
 }
 

@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { EVENTS, JOURNAL, NOTIFICATIONS, POSTS } from '@/data/mock/community'
 import { ARTICLES, LOUNGE_REVIEWS, MEMBER_VIDEOS, PAIRINGS, THREADS } from '@/data/mock/memberContent'
-import { load, save } from '@/lib/storage'
+import { load, saveSoon } from '@/lib/storage'
 import { DEFAULT_FLAGS, type FlagKey } from './flags'
 import type { AppNotification, Article, CigarEvent, Comment, CommunityPairing, JournalEntry, LoungeReview, MemberVideo, NotificationType, Post, ReactionKey } from './types'
 
@@ -81,7 +81,7 @@ const KEY = 'daily-stogie:community:v3'
 export function CommunityProvider({ children }: { children: ReactNode }) {
   const [c, setState] = useState<CommunityState>(() => load(KEY, DEFAULT))
   useEffect(() => {
-    save(KEY, c)
+    saveSoon(KEY, c)
   }, [c])
   const setC = useCallback<Ctx['setC']>((patch) => {
     setState((s) => ({ ...s, ...(typeof patch === 'function' ? patch(s) : patch) }))

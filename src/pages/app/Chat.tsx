@@ -89,7 +89,7 @@ export default function Chat() {
 
   return (
     <div className="flex h-dvh flex-col lg:h-[calc(100dvh-48px)]">
-      <header className="z-20 flex items-center gap-2 border-b border-line bg-bg/90 px-2 pb-2 pt-[max(8px,env(safe-area-inset-top))] backdrop-blur-md">
+      <header className="z-20 flex items-center gap-2 border-b border-line bg-bg/90 px-2 pb-2 pt-[max(8px,env(safe-area-inset-top))]">
         <button onClick={() => nav('/messages')} aria-label="Back" className="grid size-11 place-items-center rounded-full hover:bg-surface-2">
           <ChevronLeft size={24} strokeWidth={1.75} />
         </button>

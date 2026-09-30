@@ -36,7 +36,7 @@ export function PointsCard({ who }: { who: string }) {
   const author = useAuthor()
   const [open, setOpen] = useState(false)
   const p = pointsFor(c, who, state)
-  const board = leaderboard(c, state).slice(0, 8)
+  const board = open ? leaderboard(c, state).slice(0, 8) : []
   return (
     <>
       <button onClick={() => setOpen(true)} className="card w-full p-4 text-left transition hover:border-gold">

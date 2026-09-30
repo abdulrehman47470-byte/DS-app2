@@ -113,7 +113,7 @@ export function VideoCard({ video }: { video: { kind: 'link' | 'upload'; url: st
         <iframe title={`${e.provider} video`} src={`${e.src}&autoplay=1`} className="absolute inset-0 size-full" allow="autoplay; fullscreen; picture-in-picture" allowFullScreen />
       ) : (
         <button onClick={() => setPlay(true)} className="absolute inset-0 grid place-items-center bg-[radial-gradient(ellipse_at_60%_30%,rgba(214,154,76,.45),transparent_60%),linear-gradient(160deg,#3a2414,#120b06)]" aria-label={`Play ${e.provider} video`}>
-          <span className="grid size-16 place-items-center rounded-full bg-white/20 text-white backdrop-blur"><Play size={26} className="ml-1 fill-white" /></span>
+          <span className="grid size-16 place-items-center rounded-full bg-white/20 text-white"><Play size={26} className="ml-1 fill-white" /></span>
           <span className="absolute bottom-2 left-2 rounded-md bg-black/60 px-2 py-0.5 text-[11px] text-white">{e.provider}</span>
         </button>
       )}

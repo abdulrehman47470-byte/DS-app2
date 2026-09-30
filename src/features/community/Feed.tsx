@@ -122,7 +122,7 @@ export function Feed() {
             body={tab === 'saved' ? 'Tap Save on any post to keep it here.' : 'Be the first to share something with the lounge.'}
           />
         ) : (
-          posts.map((p) => <PostCard key={p.id} post={p} onOpenComments={() => setCommentsFor(p)} />)
+          posts.map((p) => <PostCard key={p.id} post={p} onOpenComments={setCommentsFor} />)
         )}
       </div>
 

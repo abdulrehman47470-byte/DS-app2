@@ -52,7 +52,7 @@ export default function Admin() {
 
   return (
     <div className="min-h-dvh bg-bg">
-      <header className="sticky top-0 z-20 flex items-center gap-3 border-b border-line bg-bg-elevated/90 px-5 py-3 backdrop-blur">
+      <header className="sticky top-0 z-20 flex items-center gap-3 border-b border-line bg-bg-elevated/90 px-5 py-3">
         <Link to="/settings" aria-label="Back to app" className="grid size-10 place-items-center rounded-full hover:bg-surface-2"><ArrowLeft size={20} /></Link>
         <LogoMark size={30} />
         <h1 className="font-serif text-xl">Daily Stogie Admin</h1>

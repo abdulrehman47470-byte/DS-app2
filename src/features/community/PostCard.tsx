@@ -3,7 +3,7 @@ import {
   Bookmark, Clock, Copy, EyeOff, Flag, MapPin, MessageCircle, MoreHorizontal, Pencil,
   Reply, Send, Share2, Trash2,
 } from 'lucide-react'
-import { useMemo, useState, type ReactNode } from 'react'
+import { memo, useMemo, useState, type ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Avatar, UserTypeBadge } from '@/components/brand'
 import { Badge, Button, Chip, Sheet } from '@/components/ui'
@@ -210,7 +210,9 @@ function useReact() {
   return { mine: c.myReactions, react, burst }
 }
 
-export function PostCard({ post, onOpenComments }: { post: Post; onOpenComments: () => void }) {
+/** Memoized: posts that didn't change skip re-rendering when the feed filter/tab changes. */
+export const PostCard = memo(function PostCard({ post, onOpenComments: open }: { post: Post; onOpenComments: (p: Post) => void }) {
+  const onOpenComments = () => open(post)
   const nav = useNavigate()
   const author = useAuthor()(post.authorId)
   const { c, setC } = useCommunity()
@@ -228,7 +230,7 @@ export function PostCard({ post, onOpenComments }: { post: Post; onOpenComments:
   const myReaction = REACTIONS.find((r) => r.key === mine[post.id])
 
   return (
-    <article className="card relative p-4">
+    <article className="card cv-auto relative p-4">
       <header className="flex items-start gap-3">
         <button onClick={() => post.authorId !== 'me' && nav(`/member/${post.authorId}`)} aria-label={`View ${author.name}`}>
           <Avatar tone={author.tone} name={author.name} src={author.src} size={44} />
@@ -309,7 +311,7 @@ export function PostCard({ post, onOpenComments }: { post: Post; onOpenComments:
       <ReportSheet open={report} onClose={() => setReport(false)} name={`${author.first}'s post`} />
     </article>
   )
-}
+})
 
 function MenuItem({ icon: Icon, children, onClick, danger }: { icon: typeof Flag; children: ReactNode; onClick: () => void; danger?: boolean }) {
   return (

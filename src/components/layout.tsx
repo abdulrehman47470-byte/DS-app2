@@ -1,9 +1,8 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import { GraduationCap, Heart, MessageCircle, Flame, UserRound } from 'lucide-react'
-import { Suspense } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { cn } from '@/lib/cn'
-import { useApp } from '@/lib/store'
 import { LogoMark, Wordmark } from './brand'
 
 const TABS = [
@@ -15,7 +14,17 @@ const TABS = [
 ]
 
 export function Toasts() {
-  const { toasts } = useApp()
+  const [toasts, setToasts] = useState<{ id: number; text: string }[]>([])
+  useEffect(() => {
+    const onToast = (e: Event) => {
+      const text = String((e as CustomEvent).detail)
+      const id = Date.now() + Math.random()
+      setToasts((t) => [...t, { id, text }])
+      setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), text.length > 60 ? 5000 : 2600)
+    }
+    window.addEventListener('ds-toast', onToast)
+    return () => window.removeEventListener('ds-toast', onToast)
+  }, [])
   return (
     <div className="pointer-events-none fixed inset-x-0 top-4 z-[70] flex flex-col items-center gap-2 px-4" aria-live="polite">
       <AnimatePresence>
@@ -106,9 +115,17 @@ export function AppShell() {
         {!hideTabs && (
           <nav
             aria-label="Main"
-            className="fixed inset-x-0 bottom-0 z-40 mx-auto max-w-[430px] border-t border-line bg-bg-elevated/92 pb-[env(safe-area-inset-bottom)] backdrop-blur-lg lg:hidden"
+            className="fixed inset-x-0 bottom-0 z-40 mx-auto max-w-[430px] border-t border-line bg-bg-elevated pb-[env(safe-area-inset-bottom)] lg:hidden"
           >
-            <ul className="flex">
+            <ul className="relative flex">
+              {/* Active-tab line: CSS transform only */}
+              <span
+                aria-hidden
+                className="pointer-events-none absolute top-0 flex w-1/5 justify-center transition-transform duration-200 ease-out will-change-transform"
+                style={{ transform: `translateX(${Math.max(0, TABS.findIndex((t) => loc.pathname.startsWith(t.to))) * 100}%)`, opacity: TABS.some((t) => loc.pathname.startsWith(t.to)) ? 1 : 0 }}
+              >
+                <span className="h-0.5 w-8 rounded-full bg-gold" />
+              </span>
               {TABS.map((t) => (
                 <li key={t.to} className="flex-1">
                   <NavLink
@@ -122,9 +139,6 @@ export function AppShell() {
                   >
                     {({ isActive }) => (
                       <>
-                        {isActive && (
-                          <motion.span layoutId="tab-dot" className="absolute top-0 h-0.5 w-8 rounded-full bg-gold" />
-                        )}
                         <t.icon size={22} strokeWidth={1.5} className={isActive ? 'text-gold-deep' : ''} aria-hidden />
                         {t.label}
                       </>

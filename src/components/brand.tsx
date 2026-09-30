@@ -60,20 +60,26 @@ export function Portrait({
           <stop offset="0.6" stopColor={t.glow} stopOpacity="0" />
           <stop offset="1" stopColor={t.glow} stopOpacity=".35" />
         </radialGradient>
-        <filter id={`${id}blur`}>
-          <feGaussianBlur stdDeviation="14" />
-        </filter>
+        {/* soft bokeh as a gradient (no blur filter: nothing to recompute while swiping/scrolling) */}
+        <radialGradient id={`${id}bokeh`}>
+          <stop offset="0" stopColor={t.glow} stopOpacity=".55" />
+          <stop offset="1" stopColor={t.glow} stopOpacity="0" />
+        </radialGradient>
+        <linearGradient id={`${id}smoke`} x1="0" y1="1" x2="0" y2="0">
+          <stop offset="0" stopColor="#fff" stopOpacity=".05" />
+          <stop offset="1" stopColor="#fff" stopOpacity="0" />
+        </linearGradient>
       </defs>
       <rect width="300" height="400" fill={`url(#${id}bg)`} />
       <rect width="300" height="400" fill={`url(#${id}lamp)`} />
       {/* bokeh */}
-      <g filter={`url(#${id}blur)`} opacity=".5">
-        <circle cx="40" cy="70" r="22" fill={t.glow} opacity=".35" />
-        <circle cx="250" cy="150" r="16" fill={t.glow} opacity=".4" />
-        <circle cx="90" cy="30" r="10" fill="#fff" opacity=".2" />
+      <g opacity=".6">
+        <circle cx="40" cy="70" r="44" fill={`url(#${id}bokeh)`} />
+        <circle cx="250" cy="150" r="34" fill={`url(#${id}bokeh)`} />
+        <circle cx="90" cy="30" r="20" fill={`url(#${id}bokeh)`} />
       </g>
       {/* smoke */}
-      <path d="M205 210c10-30-18-40-4-70s-6-50 8-70" stroke="#fff" strokeOpacity=".12" strokeWidth="10" fill="none" filter={`url(#${id}blur)`} />
+      <path d="M205 210c10-30-18-40-4-70s-6-50 8-70" stroke={`url(#${id}smoke)`} strokeWidth="12" strokeLinecap="round" fill="none" />
       {/* silhouette */}
       <g fill={t.skin}>
         <ellipse cx="150" cy="170" rx="54" ry="64" />
@@ -222,7 +228,7 @@ export function UserTypeBadge({ type, onPhoto }: { type: string; onPhoto?: boole
     <span
       className={cn(
         'inline-flex items-center rounded-full border px-2 py-px text-[11px] font-semibold',
-        onPhoto ? 'border-white/30 bg-white/15 text-white backdrop-blur' : 'border-gold/50 bg-gold/12 text-gold-ink',
+        onPhoto ? 'border-white/30 bg-white/15 text-white' : 'border-gold/50 bg-gold/12 text-gold-ink',
       )}
     >
       {type}

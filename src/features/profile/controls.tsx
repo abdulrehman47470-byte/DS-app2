@@ -1,6 +1,5 @@
-import { AnimatePresence, motion } from 'framer-motion'
 import { ChevronDown, Plus, Search, X } from 'lucide-react'
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { memo, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Chip, Input } from '@/components/ui'
 import { cn } from '@/lib/cn'
 import type { OptionGroup } from '@/data/options'
@@ -15,15 +14,17 @@ function toggle(kind: 'single' | 'multi', value: Val, opt: string): string | str
 
 const isOn = (value: Val, opt: string) => (Array.isArray(value) ? value.includes(opt) : value === opt)
 
-export function OptionGroupView({
+export const OptionGroupView = memo(function OptionGroupView({
   group,
   value,
-  onChange,
+  onPick,
 }: {
   group: OptionGroup
   value: Val
-  onChange: (v: string | string[]) => void
+  /** Stable callback (same function every render) so untouched groups skip re-rendering. */
+  onPick: (groupId: string, v: string | string[]) => void
 }) {
+  const onChange = (v: string | string[]) => onPick(group.id, v)
   const [q, setQ] = useState('')
   const [expanded, setExpanded] = useState(false)
   const all = group.subgroups ? group.subgroups.flatMap((s) => s.options) : group.options
@@ -78,7 +79,7 @@ export function OptionGroupView({
       {group.hint && <p className="mt-2 text-xs text-ink-muted">{group.hint}</p>}
     </div>
   )
-}
+})
 
 export function Collapsible({
   title,
@@ -106,18 +107,8 @@ export function Collapsible({
         </span>
         <ChevronDown size={20} className={cn('text-ink-muted transition-transform', open && 'rotate-180')} />
       </button>
-      <AnimatePresence initial={false}>
-        {open && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.25 }}
-          >
-            <div className="divide-y divide-line border-t border-line px-4 pb-2">{children}</div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Opens with a short CSS fade/slide; no per-frame height measuring. */}
+      {open && <div className="section-open divide-y divide-line border-t border-line px-4 pb-2">{children}</div>}
     </section>
   )
 }

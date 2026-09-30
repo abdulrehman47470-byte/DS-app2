@@ -56,7 +56,7 @@ export function UploadedVideo({ src, className }: { src: string; className?: str
             ref.current?.play().catch(() => {})
           }}
           aria-label={muted ? 'Unmute video' : 'Mute video'}
-          className="absolute bottom-3 right-3 grid size-9 place-items-center rounded-full bg-black/55 text-white backdrop-blur"
+          className="absolute bottom-3 right-3 grid size-9 place-items-center rounded-full bg-black/55 text-white"
         >
           {muted ? <VolumeX size={16} /> : <Volume2 size={16} />}
         </button>

@@ -66,7 +66,7 @@ export function Sessions() {
                 <div className="relative aspect-[4/3]">
                   <Still tone={s.tone} variant={i} className="absolute inset-0" />
                   <div className="photo-fade absolute inset-0" />
-                  <span className="absolute left-1/2 top-1/2 grid size-11 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-white/20 text-white backdrop-blur transition group-hover:scale-110"><Play size={18} className="ml-0.5 fill-white" /></span>
+                  <span className="absolute left-1/2 top-1/2 grid size-11 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-white/20 text-white transition group-hover:scale-110"><Play size={18} className="ml-0.5 fill-white" /></span>
                   {s.duration && <span className="absolute bottom-2 right-2 rounded-md bg-black/60 px-1.5 py-0.5 text-[11px] font-medium text-white">{s.duration}</span>}
                   {s.authorId === 'staff' ? (
                     <span className="absolute left-2 top-2 rounded-full bg-gold px-2 py-0.5 text-[10px] font-bold text-white">Official</span>
@@ -129,7 +129,7 @@ export function SessionDetail() {
             ) : (
               <button onClick={() => setPlaying(true)} className="absolute inset-0" aria-label={`Play ${v.title}`}>
                 <Still tone={v.tone} className="absolute inset-0" />
-                <span className="absolute left-1/2 top-1/2 grid size-16 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-white/25 text-white backdrop-blur"><Play size={26} className="ml-1 fill-white" /></span>
+                <span className="absolute left-1/2 top-1/2 grid size-16 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-white/25 text-white"><Play size={26} className="ml-1 fill-white" /></span>
                 <span className="absolute bottom-2 right-2 rounded-md bg-black/60 px-1.5 py-0.5 text-xs text-white">{official!.duration}</span>
               </button>
             )}

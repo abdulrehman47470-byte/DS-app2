@@ -40,7 +40,7 @@ export function SwipeCard({
 
   return (
     <motion.article
-      className="absolute inset-0 cursor-grab touch-pan-y overflow-hidden rounded-[28px] border border-black/10 bg-[#1c120b] shadow-deep active:cursor-grabbing"
+      className="absolute inset-0 cursor-grab touch-pan-y overflow-hidden rounded-[28px] will-change-transform [contain:layout_paint] border border-black/10 bg-[#1c120b] shadow-deep active:cursor-grabbing"
       style={{ x, rotate, zIndex: 10 - depth }}
       initial={false}
       animate={{ scale: 1 - depth * 0.045, y: depth * 14, opacity: depth > 2 ? 0 : 1 }}
@@ -83,7 +83,7 @@ export function SwipeCard({
         {chips.length > 0 && (
           <div className="mt-3 flex flex-wrap gap-1.5">
             {chips.map((c) => (
-              <span key={c} className="rounded-full border border-[#EBC475]/50 bg-[#EBC475]/20 px-2.5 py-1 text-xs font-medium text-[#FBE7C0] backdrop-blur">
+              <span key={c} className="rounded-full border border-[#EBC475]/50 bg-[#EBC475]/20 px-2.5 py-1 text-xs font-medium text-[#FBE7C0]">
                 {c}
               </span>
             ))}

@@ -78,7 +78,7 @@ export default function MemberProfile() {
   return (
     <div className="flex flex-1 flex-col pb-6">
       <ProfileBanner value={{ preset: presetForTone(m.tone) }} className="h-52">
-        <TopBar back className="absolute inset-x-0 top-0 bg-transparent text-white backdrop-blur-0 [&_button]:text-white" />
+        <TopBar back className="absolute inset-x-0 top-0 bg-transparent text-white [&_button]:text-white" />
         <div className="absolute right-4 top-16">
           <MatchRing value={m.match} onPhoto size={64} />
         </div>

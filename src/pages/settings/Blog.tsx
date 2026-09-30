@@ -87,7 +87,7 @@ export function Blog() {
                 <Cover a={featured} className="absolute inset-0 size-full" />
                 <div className="photo-fade absolute inset-0" />
                 <div className="absolute inset-x-0 bottom-0 p-4 text-white">
-                  <span className="rounded-full bg-white/20 px-2.5 py-0.5 text-[11px] font-semibold backdrop-blur">{featured.category}</span>
+                  <span className="rounded-full bg-white/20 px-2.5 py-0.5 text-[11px] font-semibold">{featured.category}</span>
                   <h2 className="mt-2 font-serif text-[24px] leading-tight drop-shadow">{featured.title}</h2>
                 </div>
               </div>
@@ -299,7 +299,7 @@ export function BlogEditor() {
         <button type="button" onClick={() => fileRef.current?.click()} className="group relative block h-44 w-full overflow-hidden rounded-[20px] border border-line" aria-label="Change cover image">
           {cover.src ? <MediaImg src={cover.src} className="size-full object-cover" /> : <Still tone={cover.tone ?? 26} className="size-full" />}
           <span className="absolute inset-0 grid place-items-center bg-black/25 opacity-90 transition group-hover:bg-black/40">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-black/50 px-3 py-1.5 text-sm font-semibold text-white backdrop-blur"><ImagePlus size={16} /> {cover.src ? 'Change cover' : 'Add cover photo'}</span>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-black/50 px-3 py-1.5 text-sm font-semibold text-white"><ImagePlus size={16} /> {cover.src ? 'Change cover' : 'Add cover photo'}</span>
           </span>
         </button>
         {!cover.src && (
