@@ -1,10 +1,12 @@
 import { useQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
-import { Heart, RotateCcw, SlidersHorizontal, X } from 'lucide-react'
+import { Bell, Heart, Map as MapIcon, Plane, RotateCcw, SlidersHorizontal, X } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { LogoMark } from '@/components/brand'
-import { Button, Chip, EmptyState, ErrorState, Sheet, Skeleton } from '@/components/ui'
+import { Button, Chip, EmptyState, ErrorState, Segmented, Sheet, Skeleton } from '@/components/ui'
+import { Feed } from '@/features/community/Feed'
+import { useCommunity } from '@/features/community/store'
 import { MEETUP_OPTIONS, MENTORSHIP_OPTIONS, USER_TYPES } from '@/data/options'
 import { MatchOverlay } from '@/features/discover/MatchOverlay'
 import { SwipeCard, type SwipeDir } from '@/features/discover/SwipeDeck'
@@ -26,6 +28,10 @@ const DEFAULT_FILTERS: Filters = { distance: 50, age: [21, 70], userTypes: [], m
 export default function Discover() {
   const nav = useNavigate()
   const { state, set, toast } = useApp()
+  const { c, on } = useCommunity()
+  const [params, setParams] = useSearchParams()
+  const view = on('community_feed') && params.get('view') === 'feed' ? 'feed' : 'people'
+  const unread = c.notifications.filter((n) => !c.readNotifications.includes(n.id) && c.notificationSettings[n.type]).length
   const exclude = useMemo(() => [...state.blocked], [state.blocked])
   const q = useQuery({
     queryKey: ['deck', exclude],
@@ -83,7 +89,7 @@ export default function Discover() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (!top || trigger || match || filtersOpen) return
+      if (view === 'feed' || !top || trigger || match || filtersOpen) return
       if ((e.target as HTMLElement).closest('input,textarea,select')) return
       if (e.key === 'ArrowRight') setTrigger('like')
       if (e.key === 'ArrowLeft') setTrigger('pass')
@@ -91,33 +97,69 @@ export default function Discover() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [top, trigger, match, filtersOpen, nav])
+  }, [view, top, trigger, match, filtersOpen, nav])
 
   const activeFilters =
     filters.userTypes.length + filters.meetup.length + filters.mentorship.length + (filters.age[0] !== 21 || filters.age[1] !== 70 ? 1 : 0)
 
   return (
     <div className="flex flex-1 flex-col">
-      <header className="flex items-center gap-3 px-5 pb-2 pt-[max(16px,env(safe-area-inset-top))]">
+      <header className="flex items-center gap-2 px-5 pb-2 pt-[max(16px,env(safe-area-inset-top))]">
         <LogoMark size={30} className="lg:hidden" />
         <h1 className="flex-1 font-serif text-[28px]">Discover</h1>
-        <button
-          onClick={() => {
-            setDraft(filters)
-            setFiltersOpen(true)
-          }}
-          aria-label="Filters"
-          className="relative grid size-11 place-items-center rounded-full border border-line bg-surface text-ink"
-        >
-          <SlidersHorizontal size={19} strokeWidth={1.6} />
-          {activeFilters > 0 && (
-            <span className="absolute -right-0.5 -top-0.5 grid size-5 place-items-center rounded-full bg-gold text-[10px] font-bold text-on-gold">
-              {activeFilters}
-            </span>
-          )}
-        </button>
+        {on('nearby_map') && view === 'people' && (
+          <Link to="/nearby" aria-label="Nearby map" className="grid size-11 place-items-center rounded-full border border-line bg-surface text-ink">
+            <MapIcon size={19} strokeWidth={1.6} />
+          </Link>
+        )}
+        {on('notifications') && (
+          <Link to="/notifications" aria-label={`Notifications, ${unread} unread`} className="relative grid size-11 place-items-center rounded-full border border-line bg-surface text-ink">
+            <Bell size={19} strokeWidth={1.6} />
+            {unread > 0 && <span className="absolute -right-0.5 -top-0.5 grid size-5 place-items-center rounded-full bg-danger text-[10px] font-bold text-white">{unread}</span>}
+          </Link>
+        )}
+        {view === 'people' && (
+          <button
+            onClick={() => {
+              setDraft(filters)
+              setFiltersOpen(true)
+            }}
+            aria-label="Filters"
+            className="relative grid size-11 place-items-center rounded-full border border-line bg-surface text-ink"
+          >
+            <SlidersHorizontal size={19} strokeWidth={1.6} />
+            {activeFilters > 0 && (
+              <span className="absolute -right-0.5 -top-0.5 grid size-5 place-items-center rounded-full bg-gold text-[10px] font-bold text-on-gold">
+                {activeFilters}
+              </span>
+            )}
+          </button>
+        )}
       </header>
 
+      {on('community_feed') && (
+        <div className="px-4 pb-2">
+          <Segmented
+            value={view}
+            onChange={(v) => setParams(v === 'feed' ? { view: 'feed' } : {}, { replace: true })}
+            options={[
+              { value: 'people', label: 'People' },
+              { value: 'feed', label: 'Lounge Feed' },
+            ]}
+          />
+        </div>
+      )}
+
+      {on('travel_mode') && c.travel && view === 'people' && (
+        <Link to="/travel" className="mx-4 mb-2 flex items-center gap-2 rounded-2xl border border-info/30 bg-info/10 px-3.5 py-2 text-[13px]">
+          <Plane size={16} className="text-info" /> Showing locals and travelers in <strong>{c.travel.city}</strong> · {c.travel.from} – {c.travel.to}
+        </Link>
+      )}
+
+      {view === 'feed' ? (
+        <Feed />
+      ) : (
+      <>
       <div className="relative mx-4 mt-2 flex-1" style={{ minHeight: 440 }}>
         {q.isLoading ? (
           <Skeleton className="absolute inset-0 rounded-[28px]" />
@@ -165,6 +207,8 @@ export default function Discover() {
         </ActionBtn>
       </div>
       <p className="sr-only">Use the left arrow to pass, the right arrow to like, and Enter to open a profile.</p>
+      </>
+      )}
 
       <MatchOverlay
         member={match}

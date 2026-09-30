@@ -16,12 +16,14 @@ export function Mentors() {
   const [mode, setMode] = useState<'find' | 'guide'>('find')
   const [topic, setTopic] = useState('')
   const [sort, setSort] = useState('match')
+  const [loc, setLoc] = useState('')
   const q = useQuery({ queryKey: ['mentors', mode, state.blocked], queryFn: () => getMentors(state, mode, state.blocked) })
 
   const list = useMemo(() => {
-    const l = (q.data ?? []).filter((m) => !topic || m.mentorTopics.includes(topic))
+    const l = (q.data ?? []).filter((m) => (!topic || m.mentorTopics.includes(topic)) && (!loc || `${m.city}, ${m.state}` === loc))
     return sort === 'match' ? [...l].sort((a, b) => b.match - a.match) : [...l].sort((a, b) => b.yearsSmoking - a.yearsSmoking)
-  }, [q.data, topic, sort])
+  }, [q.data, topic, sort, loc])
+  const locations = [...new Set((q.data ?? []).map((m) => `${m.city}, ${m.state}`))].sort()
 
   return (
     <div className="flex flex-1 flex-col">
@@ -41,17 +43,18 @@ export function Mentors() {
             <Chip key={t} selected={topic === t} onClick={() => setTopic(topic === t ? '' : t)}>{t}</Chip>
           ))}
         </div>
-        <div className="mt-2 flex items-center justify-between">
-          <p className="text-xs text-ink-muted">
-            {mode === 'find' ? 'Experienced members who enjoy guiding newcomers.' : 'Members looking for someone to learn from.'}
-          </p>
-          <div className="w-32">
-            <Select aria-label="Sort" value={sort} onChange={(e) => setSort(e.target.value)} className="min-h-9 text-xs">
-              <option value="match">Best match</option>
-              <option value="exp">Most experience</option>
-            </Select>
-          </div>
+        <div className="mt-2 grid grid-cols-2 gap-2">
+          <Select aria-label="Location" value={loc} onChange={(e) => setLoc(e.target.value)} className="min-h-10 text-sm" placeholder="Any location">
+            {locations.map((l) => <option key={l}>{l}</option>)}
+          </Select>
+          <Select aria-label="Sort" value={sort} onChange={(e) => setSort(e.target.value)} className="min-h-10 text-sm">
+            <option value="match">Sort: Best match</option>
+            <option value="exp">Sort: Most experience</option>
+          </Select>
         </div>
+        <p className="mt-2 text-xs text-ink-muted">
+          {mode === 'find' ? 'Experienced members who enjoy guiding newcomers.' : 'Members looking for someone to learn from.'}
+        </p>
       </div>
 
       <div className="mt-3 space-y-3 px-4 pb-4">

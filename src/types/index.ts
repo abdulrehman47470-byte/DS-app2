@@ -56,6 +56,9 @@ export interface Message {
   text: string
   at: string
   status?: 'sent' | 'delivered' | 'read'
+  /** Safe Meet Spot suggestion card. */
+  loungeId?: string
+  accepted?: boolean
 }
 
 export interface Conversation {
@@ -77,10 +80,8 @@ export interface Lounge {
   phone: string
   metro: string
   verificationNote: string
-  /** Position on the placeholder map, 0-100. */
-  x: number
-  y: number
-  miles: number
+  lat: number
+  lng: number
 }
 
 export interface VideoSession {

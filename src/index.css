@@ -5,21 +5,22 @@
 /* ---------- Design tokens ----------
    Every color lives here. Swap a client brand kit in this one block. */
 :root {
-  --bg: #f8f3ea;
-  --bg-elevated: #fcf7f0;
-  --surface: rgba(255, 255, 255, 0.7);
+  /* Matched to /docs/design-reference-light.png */
+  --bg: #f6f0e7;
+  --bg-elevated: #fbf7f1;
+  --surface: rgba(255, 253, 249, 0.94);
   --surface-solid: #fffdf9;
-  --surface-2: #f0e9df;
-  --line: #e4dfd8;
-  --line-strong: #c8b9a5;
-  --ink: #443227;
-  --ink-muted: #6f5f51;
-  --ink-faint: #a39484;
-  --gold: #e09e49;
-  --gold-deep: #b97a2c;
-  --gold-light: #f2c57c;
-  --gold-ink: #8a5a1c; /* gold used for text: passes 4.5:1 on cream */
-  --on-gold: #2a1b0e;
+  --surface-2: #f2ebe1;
+  --line: #e9e0d4;
+  --line-strong: #d6c7b3;
+  --ink: #3b2a1e;
+  --ink-muted: #7a6858;
+  --ink-faint: #a8998a;
+  --gold: #d69a4c;
+  --gold-deep: #bf8035;
+  --gold-light: #e7b468;
+  --gold-ink: #9a6424; /* gold used for text: passes 4.5:1 on cream */
+  --on-gold: #ffffff;
   --success: #4c9f70;
   --danger: #d9463f;
   --warning: #d9932b;
@@ -27,10 +28,9 @@
   --ember: #c8642b;
   --leaf: #6b7f4e;
   --overlay: rgba(38, 26, 17, 0.85);
-  --shadow: 0 1px 0 rgba(255, 255, 255, 0.8) inset, 0 8px 24px -12px rgba(92, 60, 28, 0.28),
-    0 2px 6px -2px rgba(92, 60, 28, 0.12);
-  --shadow-lg: 0 24px 60px -24px rgba(72, 44, 18, 0.45);
-  --outer: #ece3d5;
+  --shadow: 0 1px 2px rgba(92, 60, 28, 0.06), 0 6px 18px -10px rgba(92, 60, 28, 0.22);
+  --shadow-lg: 0 24px 60px -24px rgba(72, 44, 18, 0.4);
+  --outer: #ede5d9;
   color-scheme: light;
 }
 
@@ -136,8 +136,9 @@ body {
     backdrop-filter: blur(6px);
   }
   .btn-gold {
-    background: linear-gradient(180deg, var(--gold-light), var(--gold) 45%, var(--gold-deep));
+    background: linear-gradient(180deg, var(--gold-light), var(--gold) 55%, var(--gold-deep));
     color: var(--on-gold);
+    text-shadow: 0 1px 1px rgba(90, 50, 10, 0.22);
     box-shadow:
       0 1px 0 rgba(255, 255, 255, 0.45) inset,
       0 10px 20px -10px color-mix(in srgb, var(--gold-deep) 80%, transparent);
@@ -253,4 +254,74 @@ body {
   background: color-mix(in srgb, var(--warning) 18%, transparent);
   border-radius: 6px;
   padding: 0 4px;
+}
+
+/* ---------- Map ---------- */
+.leaflet-container {
+  font-family: var(--font-sans);
+  background: var(--surface-2);
+}
+.ds-tiles-light {
+  filter: sepia(0.45) saturate(0.7) hue-rotate(-6deg) brightness(1.04) contrast(0.92);
+}
+.ds-tiles-dark {
+  filter: invert(1) hue-rotate(180deg) sepia(0.55) saturate(0.9) brightness(0.72) contrast(1.05);
+}
+.ds-pin {
+  width: 34px;
+  height: 34px;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  display: grid;
+  place-items: center;
+  color: #fff;
+  background: linear-gradient(180deg, var(--gold-light), var(--gold-deep));
+  border: 2px solid #fff;
+  box-shadow: 0 6px 14px -4px rgba(60, 30, 5, 0.55);
+  transition: transform 0.2s ease;
+}
+.ds-pin svg {
+  transform: rotate(45deg);
+}
+.ds-pin.is-selected {
+  transform: rotate(-45deg) scale(1.3);
+  background: linear-gradient(180deg, #8a4f14, #5a3208);
+}
+.ds-cluster {
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  font-size: 13px;
+  color: #fff;
+  background: radial-gradient(circle, var(--gold) 55%, color-mix(in srgb, var(--gold) 35%, transparent) 56%);
+  box-shadow: 0 0 0 6px color-mix(in srgb, var(--gold) 22%, transparent);
+}
+.ds-person {
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-serif);
+  font-size: 13px;
+  color: #fff;
+  background: color-mix(in srgb, var(--gold-deep) 85%, transparent);
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 10px color-mix(in srgb, var(--gold) 18%, transparent);
+}
+.leaflet-control-attribution {
+  font-size: 9px !important;
+  background: color-mix(in srgb, var(--bg) 80%, transparent) !important;
+  color: var(--ink-muted) !important;
+}
+.leaflet-control-attribution a {
+  color: var(--ink-muted) !important;
+}
+.leaflet-bar a {
+  background: var(--bg-elevated) !important;
+  color: var(--ink) !important;
+  border-color: var(--line) !important;
 }

@@ -12,6 +12,9 @@ import SignIn from '@/pages/auth/SignIn'
 import { AgeVerification, IdentityVerification, NotEligible } from '@/pages/auth/Verify'
 import Welcome from '@/pages/auth/Welcome'
 import Screens, { States } from '@/pages/Screens'
+import { EventDetail, Events } from '@/pages/community/Events'
+import { NearbyMap, Notifications, PairingFinder, Passport, TravelMode } from '@/pages/community/Extras'
+import Journal from '@/pages/community/Journal'
 import { Blog, BlogPost, SessionDetail, Sessions } from '@/pages/settings/Content'
 import Legal from '@/pages/settings/Legal'
 import Settings, { DeleteAccount, Refer } from '@/pages/settings/Settings'
@@ -56,6 +59,14 @@ export default function App() {
           <Route path="/settings/blog/:slug" element={<BlogPost />} />
           <Route path="/settings/refer" element={<Refer />} />
           <Route path="/settings/delete" element={<DeleteAccount />} />
+          <Route path="/events" element={<Events />} />
+          <Route path="/events/:id" element={<EventDetail />} />
+          <Route path="/journal" element={<Journal />} />
+          <Route path="/notifications" element={<Notifications />} />
+          <Route path="/pairing" element={<PairingFinder />} />
+          <Route path="/nearby" element={<NearbyMap />} />
+          <Route path="/passport" element={<Passport />} />
+          <Route path="/travel" element={<TravelMode />} />
         </Route>
         <Route path="/admin" element={<Admin />} />
         <Route path="*" element={<Column><Screens /></Column>} />

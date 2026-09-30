@@ -1,7 +1,9 @@
 import {
   BookOpen, ChevronRight, CreditCard, Download, FileText, Gift, LogOut, MapPin, Monitor, Moon,
   PlayCircle, ScrollText, Shield, Sun, Trash2, Scale, type LucideIcon,
+  Bell, BookMarked, CalendarDays, Map as MapIcon, Plane, Stamp, Wine,
 } from 'lucide-react'
+import { useCommunity } from '@/features/community/store'
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { LogoMark } from '@/components/brand'
@@ -35,6 +37,16 @@ function Group({ title, children }: { title: string; children: React.ReactNode }
 export default function Settings() {
   const nav = useNavigate()
   const { state, set, reset } = useApp()
+  const { on } = useCommunity()
+  const community = [
+    on('events') && <Row key="ev" to="/events" icon={CalendarDays} label="Events & Meetups" />,
+    on('cigar_journal') && <Row key="jr" to="/journal" icon={BookMarked} label="Cigar Journal" />,
+    on('passport') && <Row key="pp" to="/passport" icon={Stamp} label="Cigar Passport" />,
+    on('pairing_finder') && <Row key="pf" to="/pairing" icon={Wine} label="Pairing Finder" />,
+    on('travel_mode') && <Row key="tm" to="/travel" icon={Plane} label="Travel Mode" />,
+    on('nearby_map') && <Row key="nm" to="/nearby" icon={MapIcon} label="Nearby Map" />,
+    on('notifications') && <Row key="nt" to="/notifications" icon={Bell} label="Notifications" />,
+  ].filter(Boolean)
   return (
     <div className="flex flex-1 flex-col pb-8">
       <TopBar back="/profile" title="Settings" />
@@ -61,6 +73,7 @@ export default function Settings() {
         <Row to="/settings/sessions" icon={PlayCircle} label="Stogie Sessions" />
         <Row to="/settings/blog" icon={BookOpen} label="Stogie Blog" />
       </Group>
+      {community.length > 0 && <Group title="Community">{community}</Group>}
       <Group title="Legal">
         <Row to="/legal/privacy" icon={Shield} label="Privacy Policy" />
         <Row to="/legal/terms" icon={FileText} label="Terms & Conditions" />

@@ -1,89 +1,143 @@
 import { useQuery } from '@tanstack/react-query'
-import { motion } from 'framer-motion'
-import { Bookmark, Info, List, LocateFixed, Map as MapIcon, MapPin, Navigation, Pencil, Phone, Search, Share2, Store } from 'lucide-react'
-import { useMemo, useState } from 'react'
-import { Badge, Button, Chip, EmptyState, ErrorState, Input, ListSkeleton, Segmented, Sheet, Textarea, TopBar } from '@/components/ui'
+import {
+  Bookmark, CheckCircle2, Info, List, LocateFixed, Map as MapIcon, MapPin, Navigation, Pencil, Phone,
+  Search, Share2, Star,
+} from 'lucide-react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import type L from 'leaflet'
+import { useSearchParams } from 'react-router-dom'
+import { LoungeMap, milesBetween } from '@/components/LoungeMap'
+import { Badge, Button, Chip, EmptyState, ErrorState, Field, Input, ListSkeleton, Segmented, Select, Sheet, Textarea, TopBar } from '@/components/ui'
+import { PREF_SECTIONS } from '@/data/options'
+import { Bands } from '@/features/community/PostCard'
+import { BandRating } from '@/features/community/SmokeReportForm'
+import { useCommunity } from '@/features/community/store'
 import { getLounges } from '@/lib/api'
 import { cn } from '@/lib/cn'
 import { useApp } from '@/lib/store'
 import type { Lounge } from '@/types'
 
 const VENUE_TYPES: Lounge['venueType'][] = ['Lounge', 'Lounge + Shop', 'Shop + Lounge', 'Members club']
+const ATMOSPHERE = PREF_SECTIONS[0].groups.find((g) => g.id === 'atmosphere')!.options
 
-/** Themed placeholder map until Mapbox is connected in Phase 7. */
-function PlaceholderMap({ lounges, selected, onSelect, tall }: { lounges: Lounge[]; selected?: string; onSelect: (l: Lounge) => void; tall?: boolean }) {
-  return (
-    <div className={cn('relative overflow-hidden rounded-[20px] border border-line', tall ? 'h-[56dvh]' : 'h-48')}>
-      <svg viewBox="0 0 400 240" preserveAspectRatio="xMidYMid slice" className="absolute inset-0 size-full" aria-hidden>
-        <rect width="400" height="240" fill="var(--surface-2)" />
-        <path d="M300 0c-20 60 30 90 10 140s40 80 30 100h60V0z" fill="var(--info)" opacity=".18" />
-        <path d="M0 170c60-10 90 20 150 8s100-30 160-10" stroke="var(--info)" strokeOpacity=".25" strokeWidth="10" fill="none" />
-        {Array.from({ length: 12 }).map((_, i) => (
-          <path key={`h${i}`} d={`M0 ${i * 22}H400`} stroke="var(--line-strong)" strokeOpacity=".35" strokeWidth={i % 4 === 0 ? 3 : 1} />
-        ))}
-        {Array.from({ length: 18 }).map((_, i) => (
-          <path key={`v${i}`} d={`M${i * 24} 0V240`} stroke="var(--line-strong)" strokeOpacity=".35" strokeWidth={i % 5 === 0 ? 3 : 1} />
-        ))}
-        <path d="M0 40L400 200" stroke="var(--gold)" strokeOpacity=".35" strokeWidth="5" />
-        <rect x="60" y="60" width="50" height="34" rx="4" fill="var(--leaf)" opacity=".18" />
-        <rect x="200" y="120" width="40" height="26" rx="4" fill="var(--leaf)" opacity=".18" />
-      </svg>
-      {lounges.map((l) => (
-        <button
-          key={l.id}
-          onClick={() => onSelect(l)}
-          aria-label={l.name}
-          className="absolute -translate-x-1/2 -translate-y-full"
-          style={{ left: `${l.x}%`, top: `${l.y}%` }}
-        >
-          <motion.span
-            animate={selected === l.id ? { scale: 1.25, y: -4 } : { scale: 1, y: 0 }}
-            className="relative grid size-9 place-items-center rounded-full rounded-br-none border-2 border-white bg-gradient-to-b from-gold-light to-gold-deep text-on-gold shadow-lg [transform:rotate(45deg)]"
-          >
-            <Store size={15} className="-rotate-45" />
-          </motion.span>
-        </button>
-      ))}
-      <span className="absolute left-[46%] top-[52%] size-4 rounded-full border-[3px] border-white bg-info shadow" aria-label="You are here" />
-      <p className="absolute bottom-2 left-2 rounded-full bg-bg/80 px-2 py-0.5 text-[10px] text-ink-muted backdrop-blur">Map preview · Mapbox in Phase 7</p>
-    </div>
-  )
+// Approximate city centers for "distance from my city" before geolocation. Phase 7 geocodes ZIPs.
+const CITY_CENTERS: Record<string, [number, number]> = {
+  Miami: [25.7617, -80.1918], Chicago: [41.8781, -87.6298], Austin: [30.2672, -97.7431], Houston: [29.7604, -95.3698],
+  Denver: [39.7392, -104.9903], Nashville: [36.1627, -86.7816], Atlanta: [33.749, -84.388], 'San Diego': [32.7157, -117.1611],
+  'New York': [40.7128, -74.006],
 }
 
+/** Stable mock rating per lounge until lounge_reviews is live. */
+const mockRating = (id: string) => 3.6 + ((id.charCodeAt(id.length - 1) * 7) % 14) / 10
+
 export default function StogieSearch() {
-  const { toast } = useApp()
+  const { state, toast } = useApp()
+  const { c, setC, on } = useCommunity()
+  const [params] = useSearchParams()
   const q = useQuery({ queryKey: ['lounges'], queryFn: getLounges })
   const [view, setView] = useState<'list' | 'map'>('list')
   const [search, setSearch] = useState('')
   const [types, setTypes] = useState<string[]>([])
-  const [nearMe, setNearMe] = useState(false)
-  const [open, setOpen] = useState<Lounge | null>(null)
-  const [correcting, setCorrecting] = useState(false)
-  const [saved, setSaved] = useState<string[]>([])
+  const [stateF, setStateF] = useState('')
+  const [cityF, setCityF] = useState('')
+  const [favOnly, setFavOnly] = useState(false)
+  const [userPos, setUserPos] = useState<[number, number] | null>(null)
+  const [bounds, setBounds] = useState<L.LatLngBounds | null>(null)
+  const [openId, setOpenId] = useState<string | null>(params.get('lounge'))
+  const [sheet, setSheet] = useState<'none' | 'correct' | 'review' | 'checkin'>('none')
+  const [askLocation, setAskLocation] = useState(false)
+  const cardsRef = useRef<HTMLDivElement>(null)
+
+  const origin: [number, number] = userPos ?? CITY_CENTERS[state.demographics.city] ?? CITY_CENTERS.Miami
+  const all = useMemo(() => q.data ?? [], [q.data])
+  const states = [...new Set(all.map((l) => l.state))].sort()
+  const cities = [...new Set(all.filter((l) => !stateF || l.state === stateF).map((l) => l.city))].sort()
 
   const list = useMemo(() => {
-    const s = search.toLowerCase()
-    const l = (q.data ?? []).filter(
-      (x) =>
-        (!s || `${x.name} ${x.city} ${x.state} ${x.zip} ${x.metro}`.toLowerCase().includes(s)) &&
-        (!types.length || types.includes(x.venueType)),
-    )
-    return nearMe ? [...l].sort((a, b) => a.miles - b.miles) : l
-  }, [q.data, search, types, nearMe])
+    const s = search.toLowerCase().trim()
+    return all
+      .filter(
+        (x) =>
+          (!s || `${x.name} ${x.city} ${x.state} ${x.zip} ${x.metro}`.toLowerCase().includes(s)) &&
+          (!types.length || types.includes(x.venueType)) &&
+          (!stateF || x.state === stateF) &&
+          (!cityF || x.city === cityF) &&
+          (!favOnly || c.favorites.includes(x.id)) &&
+          (!bounds || bounds.contains([x.lat, x.lng])),
+      )
+      .map((x) => ({ ...x, miles: milesBetween(origin, [x.lat, x.lng]) }))
+      .sort((a, b) => a.miles - b.miles)
+  }, [all, search, types, stateF, cityF, favOnly, c.favorites, bounds, origin])
 
   const metros = useMemo(() => {
-    const c: Record<string, number> = {}
-    q.data?.forEach((l) => (c[l.metro] = (c[l.metro] ?? 0) + 1))
-    return Object.entries(c)
-  }, [q.data])
+    const m: Record<string, number> = {}
+    all.forEach((l) => (m[l.metro] = (m[l.metro] ?? 0) + 1))
+    return Object.entries(m).sort((a, b) => b[1] - a[1])
+  }, [all])
+
+  const open = list.find((l) => l.id === openId) ?? (openId ? all.map((x) => ({ ...x, miles: milesBetween(origin, [x.lat, x.lng]) })).find((l) => l.id === openId) : undefined)
+
+  useEffect(() => {
+    if (view !== 'map' || !openId) return
+    cardsRef.current?.querySelector(`[data-id="${openId}"]`)?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' })
+  }, [openId, view])
 
   const locate = () => {
+    setAskLocation(false)
     if (!navigator.geolocation) return toast('Location isn’t available. Search by city or ZIP instead.')
     navigator.geolocation.getCurrentPosition(
-      () => { setNearMe(true); toast('Sorted by distance') },
+      (p) => { setUserPos([p.coords.latitude, p.coords.longitude]); setBounds(null); toast('Sorted by distance from you') },
       () => toast('No problem. Search by city or ZIP instead.'),
+      { timeout: 8000 },
     )
   }
+
+  const toggleFav = (id: string) => {
+    const has = c.favorites.includes(id)
+    setC((s) => ({ favorites: has ? s.favorites.filter((x) => x !== id) : [...s.favorites, id] }))
+    toast(has ? 'Removed from favorites' : 'Saved to favorites')
+  }
+
+  const rating = (l: Lounge) => {
+    const mine = c.reviews[l.id]
+    const base = mockRating(l.id)
+    return mine ? (base * 12 + mine.rating) / 13 : base
+  }
+
+  const directions = (l: Lounge) => {
+    const addr = encodeURIComponent(`${l.street}, ${l.city}, ${l.state} ${l.zip}`)
+    const ios = /iPad|iPhone|Mac/.test(navigator.userAgent)
+    return {
+      apple: `https://maps.apple.com/?daddr=${addr}`,
+      google: `https://www.google.com/maps/dir/?api=1&destination=${addr}`,
+      waze: `https://waze.com/ul?q=${addr}&navigate=yes`,
+      preferred: ios ? 'apple' : 'google',
+    }
+  }
+
+  const points = list.map((l) => ({ id: l.id, lat: l.lat, lng: l.lng, label: l.name }))
+
+  const card = (l: (typeof list)[number], compact?: boolean) => (
+    <div key={l.id} data-id={l.id} className={cn('card p-4', compact && 'w-[78%] shrink-0 snap-center', openId === l.id && compact && 'border-gold')}>
+      <button onClick={() => setOpenId(l.id)} className="w-full text-left">
+        <div className="flex items-start justify-between gap-2">
+          <h3 className="font-serif text-[17px] leading-tight">{l.name}</h3>
+          <span className="shrink-0 text-xs font-semibold text-gold-ink">{l.miles < 10 ? l.miles.toFixed(1) : Math.round(l.miles).toLocaleString()} mi</span>
+        </div>
+        <p className="mt-0.5 text-xs text-ink-muted">{l.venueType} · {l.street}, {l.city}, {l.state}</p>
+        {on('lounge_reviews') && (
+          <p className="mt-1 flex items-center gap-1 text-xs text-ink-muted"><Star size={12} className="fill-gold text-gold" /> {rating(l).toFixed(1)}</p>
+        )}
+      </button>
+      <div className="mt-3 flex gap-2">
+        <a href={`tel:${l.phone.replace(/\D/g, '')}`} className="inline-flex min-h-9 items-center gap-1.5 rounded-full bg-gold/15 px-3 text-xs font-semibold text-gold-ink"><Phone size={13} /> Call</a>
+        <a href={directions(l)[directions(l).preferred as 'apple' | 'google']} target="_blank" rel="noreferrer" className="inline-flex min-h-9 items-center gap-1.5 rounded-full bg-gold/15 px-3 text-xs font-semibold text-gold-ink"><Navigation size={13} /> Directions</a>
+        <button onClick={() => toggleFav(l.id)} aria-label="Favorite" className={cn('ml-auto grid size-9 place-items-center rounded-full', c.favorites.includes(l.id) ? 'text-gold-deep' : 'text-ink-muted')}>
+          <Bookmark size={16} className={c.favorites.includes(l.id) ? 'fill-current' : ''} />
+        </button>
+      </div>
+    </div>
+  )
 
   return (
     <div className="flex flex-1 flex-col">
@@ -93,89 +147,221 @@ export default function StogieSearch() {
           { value: 'map', label: <MapIcon size={16} aria-label="Map" /> },
         ]} />
       } />
-      <div className="space-y-3 px-4">
+
+      <div className="space-y-2.5 px-4">
         <div className="flex gap-2">
           <div className="relative flex-1">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted" />
-            <Input placeholder="Search lounges, city or ZIP" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" aria-label="Search lounges" />
+            <Input placeholder="Search lounges, city or ZIP" value={search} onChange={(e) => { setSearch(e.target.value); setBounds(null) }} className="pl-9" aria-label="Search lounges" />
           </div>
-          <button onClick={locate} aria-label="Near me" className={cn('grid size-11 shrink-0 place-items-center rounded-[14px] border', nearMe ? 'border-gold bg-gold/15 text-gold-deep' : 'border-line bg-surface')}>
+          <button onClick={() => setAskLocation(true)} aria-label="Near me" className={cn('grid size-11 shrink-0 place-items-center rounded-[14px] border', userPos ? 'border-gold bg-gold/15 text-gold-deep' : 'border-line bg-surface')}>
             <LocateFixed size={19} />
           </button>
         </div>
+        <div className="grid grid-cols-2 gap-2">
+          <Select aria-label="State" value={stateF} onChange={(e) => { setStateF(e.target.value); setCityF(''); setBounds(null) }} placeholder="All states" className="min-h-10 text-sm">
+            {states.map((s) => <option key={s}>{s}</option>)}
+          </Select>
+          <Select aria-label="City" value={cityF} onChange={(e) => { setCityF(e.target.value); setBounds(null) }} placeholder="All cities" className="min-h-10 text-sm">
+            {cities.map((s) => <option key={s}>{s}</option>)}
+          </Select>
+        </div>
         <div className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4">
+          <Chip selected={favOnly} onClick={() => setFavOnly(!favOnly)}><Bookmark size={13} /> Favorites</Chip>
           <Chip selected={!types.length} onClick={() => setTypes([])}>All types</Chip>
           {VENUE_TYPES.map((t) => (
             <Chip key={t} selected={types.includes(t)} onClick={() => setTypes(types.includes(t) ? types.filter((x) => x !== t) : [...types, t])}>{t}</Chip>
           ))}
         </div>
-        {view === 'list' && <PlaceholderMap lounges={list} onSelect={setOpen} />}
+        {bounds && (
+          <p className="flex items-center justify-between text-xs text-ink-muted">Showing lounges in this map area <button className="font-semibold text-gold-ink" onClick={() => setBounds(null)}>Clear</button></p>
+        )}
       </div>
 
-      {view === 'map' ? (
-        <div className="px-4 pt-3"><PlaceholderMap tall lounges={list} onSelect={setOpen} selected={open?.id} /></div>
-      ) : q.isLoading ? (
+      {q.isLoading ? (
         <div className="p-4"><ListSkeleton rows={4} avatar={false} /></div>
       ) : q.isError ? (
         <ErrorState onRetry={() => q.refetch()} />
-      ) : list.length === 0 ? (
-        <EmptyState icon={MapPin} title="No lounges found" body="More cities coming soon. Try another city, ZIP or venue type." />
+      ) : view === 'map' ? (
+        <div className="relative mt-3 flex-1 px-4 pb-4">
+          <LoungeMap className="h-[62dvh]" points={points} selectedId={openId ?? undefined} onSelect={setOpenId} userPos={userPos} onSearchArea={setBounds} />
+          <div ref={cardsRef} className="no-scrollbar absolute inset-x-4 bottom-8 z-[500] flex snap-x snap-mandatory gap-3 overflow-x-auto px-[11%]">
+            {list.map((l) => card(l, true))}
+          </div>
+          {list.length === 0 && <p className="absolute inset-x-8 bottom-10 z-[500] rounded-2xl bg-bg-elevated p-3 text-center text-sm shadow-deep">No lounges here. More cities coming soon.</p>}
+        </div>
       ) : (
         <>
-          <p className="px-5 pt-4 text-xs text-ink-muted">
-            {list.length} lounges · {metros.map(([m, n]) => `${m} ${n}`).join(' · ')}
-          </p>
-          <ul className="space-y-2.5 p-4">
-            {list.map((l) => (
-              <li key={l.id} className="card p-4">
-                <button onClick={() => setOpen(l)} className="w-full text-left">
-                  <div className="flex items-start justify-between gap-2">
-                    <h3 className="font-serif text-[17px] leading-tight">{l.name}</h3>
-                    {nearMe && <span className="shrink-0 text-xs font-semibold text-gold-ink">{l.miles.toLocaleString()} mi</span>}
-                  </div>
-                  <p className="mt-0.5 text-xs text-ink-muted">{l.venueType} · {l.street}, {l.city}, {l.state}</p>
-                </button>
-                <div className="mt-3 flex gap-2">
-                  <a href={`tel:${l.phone.replace(/\D/g, '')}`} className="inline-flex min-h-9 items-center gap-1.5 rounded-full bg-gold/15 px-3 text-xs font-semibold text-gold-ink"><Phone size={13} /> Call</a>
-                  <a href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${l.street}, ${l.city}, ${l.state} ${l.zip}`)}`} target="_blank" rel="noreferrer" className="inline-flex min-h-9 items-center gap-1.5 rounded-full bg-gold/15 px-3 text-xs font-semibold text-gold-ink"><Navigation size={13} /> Directions</a>
-                </div>
-              </li>
+          <div className="px-4 pt-3">
+            <LoungeMap className="h-48" points={points} onSelect={(id) => { setOpenId(id) }} userPos={userPos} onSearchArea={setBounds} />
+          </div>
+          <div className="no-scrollbar flex gap-2 overflow-x-auto px-4 pt-3 text-xs">
+            {metros.map(([m, n]) => (
+              <button key={m} onClick={() => { setSearch(m); setBounds(null) }} className="shrink-0 rounded-full border border-line bg-surface px-2.5 py-1 text-ink-muted hover:border-gold">
+                {m} <strong className="text-ink">{n}</strong>
+              </button>
             ))}
-          </ul>
+          </div>
+          {list.length === 0 ? (
+            <EmptyState icon={MapPin} title="No lounges found" body="More cities coming soon. Try another city, ZIP or venue type." />
+          ) : (
+            <div className="space-y-2.5 p-4">{list.map((l) => card(l))}</div>
+          )}
           <p className="flex items-center justify-center gap-1.5 px-6 pb-6 text-center text-xs text-ink-muted"><Info size={13} /> Hours and phone numbers may change. Call ahead.</p>
         </>
       )}
 
-      <Sheet open={!!open} onClose={() => { setOpen(null); setCorrecting(false) }} title={open?.name ?? ''}>
+      {/* friendly location explainer */}
+      <Sheet open={askLocation} onClose={() => setAskLocation(false)} title="Find lounges near you">
+        <p className="text-sm text-ink-muted">We use your location once to sort lounges by distance. It isn’t saved or shared with other members.</p>
+        <div className="mt-5 space-y-2 pb-3">
+          <Button block size="lg" icon={LocateFixed} onClick={locate}>Use my location</Button>
+          <Button block variant="ghost" onClick={() => setAskLocation(false)}>I’ll search by city or ZIP</Button>
+        </div>
+      </Sheet>
+
+      {/* lounge detail */}
+      <Sheet open={!!open && sheet === 'none'} onClose={() => setOpenId(null)} title={open?.name ?? ''}>
         {open && (
           <div className="space-y-4 pb-3">
             <div className="flex flex-wrap gap-2">
               <Badge tone="muted">{open.venueType}</Badge>
               <Badge tone={open.verificationNote.includes('unverified') ? 'warning' : 'success'}>{open.verificationNote}</Badge>
               <Badge tone="muted">{open.metro} metro</Badge>
+              <Badge tone="muted">{open.miles < 10 ? open.miles.toFixed(1) : Math.round(open.miles).toLocaleString()} mi away</Badge>
             </div>
+            {on('lounge_reviews') && (
+              <div className="flex items-center gap-3">
+                <span className="font-serif text-3xl">{rating(open).toFixed(1)}</span>
+                <div>
+                  <Bands value={Math.round(rating(open))} size={14} />
+                  <p className="mt-0.5 text-xs text-ink-muted">{12 + (c.reviews[open.id] ? 1 : 0)} member reviews</p>
+                </div>
+              </div>
+            )}
             <p className="flex gap-2 text-[15px]"><MapPin size={18} className="mt-0.5 shrink-0 text-gold-deep" /> {open.street}, {open.city}, {open.state} {open.zip}</p>
             <p className="flex gap-2 text-[15px]"><Phone size={18} className="mt-0.5 shrink-0 text-gold-deep" /> {open.phone}</p>
             <div className="grid grid-cols-2 gap-2">
               <a href={`tel:${open.phone.replace(/\D/g, '')}`}><Button block icon={Phone}>Call</Button></a>
-              <a href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${open.street}, ${open.city}, ${open.state}`)}`} target="_blank" rel="noreferrer"><Button block variant="secondary" icon={Navigation}>Directions</Button></a>
-              <Button variant="secondary" icon={Bookmark} onClick={() => { setSaved(saved.includes(open.id) ? saved.filter((x) => x !== open.id) : [...saved, open.id]); toast(saved.includes(open.id) ? 'Removed from favorites' : 'Saved to favorites') }}>
-                {saved.includes(open.id) ? 'Saved' : 'Save'}
-              </Button>
-              <Button variant="secondary" icon={Share2} onClick={() => { navigator.clipboard?.writeText(`${open.name}, ${open.street}, ${open.city}`).catch(() => {}); toast('Address copied') }}>Share</Button>
+              <Button variant="secondary" icon={Bookmark} onClick={() => toggleFav(open.id)}>{c.favorites.includes(open.id) ? 'Saved' : 'Save'}</Button>
             </div>
-            {correcting ? (
-              <div className="space-y-2">
-                <Textarea placeholder="What should we fix? (e.g. new phone number, closed, moved)" aria-label="Correction" />
-                <Button block onClick={() => { setCorrecting(false); toast('Thanks! An admin will review it.') }}>Send correction</Button>
+            <div>
+              <p className="micro-label mb-2">Directions</p>
+              <div className="grid grid-cols-3 gap-2">
+                {(['apple', 'google', 'waze'] as const).map((k) => (
+                  <a key={k} href={directions(open)[k]} target="_blank" rel="noreferrer">
+                    <Button block size="sm" variant="secondary" icon={Navigation}>{k === 'apple' ? 'Apple Maps' : k === 'google' ? 'Google' : 'Waze'}</Button>
+                  </a>
+                ))}
               </div>
-            ) : (
-              <Button variant="ghost" block icon={Pencil} onClick={() => setCorrecting(true)}>Suggest a correction</Button>
-            )}
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <Button variant="secondary" icon={Share2} onClick={async () => {
+                const text = `${open.name}, ${open.street}, ${open.city}, ${open.state}`
+                if (navigator.share) { try { await navigator.share({ title: open.name, text }) } catch { /* cancelled */ } } else { navigator.clipboard?.writeText(text).catch(() => {}); toast('Address copied') }
+              }}>Share</Button>
+              {on('lounge_checkins') && <Button variant="secondary" icon={CheckCircle2} onClick={() => setSheet('checkin')}>I’m here</Button>}
+            </div>
+            {on('lounge_reviews') && <Button variant="secondary" block icon={Star} onClick={() => setSheet('review')}>{c.reviews[open.id] ? 'Edit your review' : 'Write a review'}</Button>}
+            <Button variant="ghost" block icon={Pencil} onClick={() => setSheet('correct')}>Suggest a correction</Button>
             <p className="text-center text-xs text-ink-muted">Locator only. Daily Stogie does not sell tobacco.</p>
           </div>
         )}
       </Sheet>
+
+      <CorrectionSheet open={sheet === 'correct'} onClose={() => setSheet('none')} />
+      {open && <ReviewSheet open={sheet === 'review'} loungeId={open.id} onClose={() => setSheet('none')} />}
+      {open && <CheckinSheet open={sheet === 'checkin'} lounge={open} onClose={() => setSheet('none')} />}
     </div>
+  )
+}
+
+function CorrectionSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const { toast } = useApp()
+  const [field, setField] = useState('Phone number')
+  const [text, setText] = useState('')
+  return (
+    <Sheet open={open} onClose={onClose} title="Suggest a correction" footer={<Button block disabled={!text.trim()} onClick={() => { setText(''); toast('Thanks! An admin will review it.'); onClose() }}>Send correction</Button>}>
+      <p className="mb-3 text-sm text-ink-muted">Lounge data comes from public listings and may be out of date.</p>
+      <Field label="What’s wrong?" htmlFor="corr-field">
+        <Select id="corr-field" value={field} onChange={(e) => setField(e.target.value)}>
+          {['Phone number', 'Address', 'Venue type', 'Permanently closed', 'Name', 'Something else'].map((f) => <option key={f}>{f}</option>)}
+        </Select>
+      </Field>
+      <Textarea className="mt-3" value={text} onChange={(e) => setText(e.target.value)} placeholder="The correct details" aria-label="Correction details" />
+    </Sheet>
+  )
+}
+
+function ReviewSheet({ open, loungeId, onClose }: { open: boolean; loungeId: string; onClose: () => void }) {
+  const { c, setC } = useCommunity()
+  const { toast } = useApp()
+  const existing = c.reviews[loungeId]
+  const [rating, setRating] = useState(existing?.rating ?? 0)
+  const [tags, setTags] = useState<string[]>(existing?.tags ?? [])
+  const [menu, setMenu] = useState(existing?.pairingMenu ?? 0)
+  const [tips, setTips] = useState(existing?.tips ?? '')
+  return (
+    <Sheet
+      open={open}
+      onClose={onClose}
+      title="Review this lounge"
+      footer={
+        <Button block disabled={!rating} onClick={() => {
+          setC((s) => ({ reviews: { ...s.reviews, [loungeId]: { rating, tags, pairingMenu: menu, tips } } }))
+          toast('Review submitted for moderation')
+          onClose()
+        }}>Submit review</Button>
+      }
+    >
+      <div className="space-y-5 pb-2">
+        <div><p className="mb-2 text-sm font-semibold">Overall</p><BandRating label="Overall rating" value={rating} onChange={setRating} /></div>
+        <div>
+          <p className="mb-2 text-sm font-semibold">Atmosphere</p>
+          <div className="flex flex-wrap gap-2">{ATMOSPHERE.map((a) => <Chip key={a} size="sm" selected={tags.includes(a)} onClick={() => setTags(tags.includes(a) ? tags.filter((x) => x !== a) : [...tags, a])}>{a}</Chip>)}</div>
+        </div>
+        <div><p className="mb-2 text-sm font-semibold">Pairing menu quality</p><BandRating label="Pairing menu" value={menu} onChange={setMenu} /></div>
+        <Field label="Tips for other members" htmlFor="tips" optional><Textarea id="tips" value={tips} onChange={(e) => setTips(e.target.value)} maxLength={500} placeholder="Best seats, when it’s quiet, staff picks…" /></Field>
+        <p className="text-xs text-ink-muted">One review per member per lounge. Reviews are moderated.</p>
+      </div>
+    </Sheet>
+  )
+}
+
+function CheckinSheet({ open, lounge, onClose }: { open: boolean; lounge: Lounge; onClose: () => void }) {
+  const { setC } = useCommunity()
+  const { toast } = useApp()
+  const [visibleTo, setVisibleTo] = useState<'Matches' | 'Mentors' | 'Matches & mentors'>('Matches')
+  const [checking, setChecking] = useState(false)
+
+  const save = (verified: boolean) => {
+    setC((s) => ({ checkins: [{ loungeId: lounge.id, at: Date.now(), visibleTo, verified }, ...s.checkins] }))
+    toast(verified ? 'Checked in! Passport stamped.' : 'Checked in (unverified). No passport stamp.')
+    setChecking(false)
+    onClose()
+  }
+
+  const verify = () => {
+    setChecking(true)
+    if (!navigator.geolocation) return save(false)
+    navigator.geolocation.getCurrentPosition(
+      (p) => save(milesBetween([p.coords.latitude, p.coords.longitude], [lounge.lat, lounge.lng]) <= 0.19),
+      () => { setChecking(false); toast('Couldn’t get your location. Try a manual check-in.') },
+      { timeout: 8000 },
+    )
+  }
+
+  return (
+    <Sheet open={open} onClose={onClose} title={`Check in at ${lounge.name}`}>
+      <p className="text-sm text-ink-muted">Let your matches or mentors know you’re here. Your check-in disappears after 4 hours, and we never keep a location history.</p>
+      <div className="mt-4">
+        <Segmented value={visibleTo} onChange={setVisibleTo} options={[{ value: 'Matches', label: 'Matches' }, { value: 'Mentors', label: 'Mentors' }, { value: 'Matches & mentors', label: 'Both' }]} />
+      </div>
+      <div className="mt-5 space-y-2 pb-3">
+        <Button block size="lg" icon={LocateFixed} disabled={checking} onClick={verify}>{checking ? 'Checking location…' : 'Verify with my location'}</Button>
+        <Button block variant="ghost" onClick={() => save(false)}>Check in manually</Button>
+        <p className="text-center text-xs text-ink-muted">Verified check-ins (within ~300 m) earn Cigar Passport stamps.</p>
+      </div>
+    </Sheet>
   )
 }

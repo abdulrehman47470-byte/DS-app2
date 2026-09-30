@@ -1,4 +1,9 @@
-import { Archive, BadgeCheck, Briefcase, Clock, Heart, Leaf, Pencil, Settings, Sparkles, Wine } from 'lucide-react'
+import { Archive, BadgeCheck, BookMarked, Briefcase, CalendarDays, Clock, Flame, Heart, Leaf, Music2, Pencil, Settings, Sparkles, Stamp, Wine } from 'lucide-react'
+import { useState } from 'react'
+import { Field, Input, Sheet } from '@/components/ui'
+import { isAllowedMusic, MusicCard } from '@/features/community/embeds'
+import { useCommunity } from '@/features/community/store'
+import { usePassport } from '@/pages/community/Extras'
 import { Link } from 'react-router-dom'
 import { Avatar, CompletenessRing, Portrait, UserTypeBadge } from '@/components/brand'
 import { ProgressBar } from '@/components/layout'
@@ -9,7 +14,15 @@ import { ChipRow, ProfileSection } from './MemberProfile'
 const arr = (v: unknown) => (Array.isArray(v) ? (v as string[]) : v ? [String(v)] : [])
 
 export default function MyProfile() {
-  const { state } = useApp()
+  const { state, toast } = useApp()
+  const { c, setC, on } = useCommunity()
+  const passport = usePassport()
+  const [statusOpen, setStatusOpen] = useState(false)
+  const [nsText, setNsText] = useState('')
+  const [nsMusic, setNsMusic] = useState('')
+  const [trackOpen, setTrackOpen] = useState(false)
+  const [track, setTrack] = useState(c.soundtrack)
+  const nowSmoking = c.nowSmoking && c.nowSmoking.until > Date.now() ? c.nowSmoking : null
   const d = state.demographics
   const pct = completeness(state)
   const p = state.prefs
@@ -51,13 +64,40 @@ export default function MyProfile() {
           {pct < 100 && <p className="mt-2 text-xs text-ink-muted">Complete profiles get better matches.</p>}
         </div>
 
+        {on('music_share') && (
+          <button onClick={() => setStatusOpen(true)} className="mt-4 flex w-full items-center gap-3 rounded-2xl border border-dashed border-gold/50 bg-gold/8 px-3.5 py-3 text-left">
+            <Flame size={18} className="shrink-0 text-ember" />
+            <span className="min-w-0 flex-1 text-sm">
+              {nowSmoking ? (
+                <><strong>Now smoking:</strong> {nowSmoking.text}{nowSmoking.music && <span className="block truncate text-xs text-ink-muted">Now playing · {nowSmoking.music}</span>}</>
+              ) : (
+                <span className="text-ink-muted">What are you smoking right now? (clears after 6 hours)</span>
+              )}
+            </span>
+          </button>
+        )}
+
         <div className="mt-4 grid grid-cols-2 gap-3">
           <Link to="/profile/edit/1"><Button block variant="secondary" icon={Pencil}>Edit Profile</Button></Link>
           <Link to="/settings"><Button block variant="secondary" icon={Settings}>Settings</Button></Link>
         </div>
       </div>
 
+      {(on('cigar_journal') || on('passport') || on('events')) && (
+        <div className="mt-4 grid grid-cols-3 gap-2 px-4">
+          {on('cigar_journal') && <Link to="/journal" className="card flex flex-col items-center gap-1 p-3 text-center text-xs font-medium"><BookMarked size={20} className="text-gold-deep" /> Journal<span className="text-ink-muted">{c.journal.length} entries</span></Link>}
+          {on('passport') && <Link to="/passport" className="card flex flex-col items-center gap-1 p-3 text-center text-xs font-medium"><Stamp size={20} className="text-gold-deep" /> Passport<span className="text-ink-muted">{passport.lounges.length} stamps</span></Link>}
+          {on('events') && <Link to="/events" className="card flex flex-col items-center gap-1 p-3 text-center text-xs font-medium"><CalendarDays size={20} className="text-gold-deep" /> Events<span className="text-ink-muted">{Object.values(c.rsvp).filter((r) => r === 'Going').length} going</span></Link>}
+        </div>
+      )}
+
       <div className="mt-5 space-y-3 px-4">
+        {on('music_share') && (
+          <ProfileSection icon={Music2} title="Smoking soundtrack">
+            {c.soundtrack ? <MusicCard url={c.soundtrack} /> : <p className="text-sm text-ink-muted">Pin a playlist or song to your profile.</p>}
+            <button onClick={() => setTrackOpen(true)} className="mt-2 text-sm font-semibold text-gold-ink">{c.soundtrack ? 'Change' : 'Add soundtrack'}</button>
+          </ProfileSection>
+        )}
         <ProfileSection icon={Sparkles} title="About">
           <p className="text-[15px] leading-relaxed">{d.bio || 'Add a short bio so members know you.'}</p>
         </ProfileSection>
@@ -85,6 +125,28 @@ export default function MyProfile() {
           <p className="text-[15px]">{arr(a.industry)[0] ?? 'Not set'}</p>
         </ProfileSection>
       </div>
+
+      <Sheet open={statusOpen} onClose={() => setStatusOpen(false)} title="Now smoking" footer={
+        <div className="flex gap-2">
+          {nowSmoking && <Button variant="secondary" onClick={() => { setC({ nowSmoking: null }); setStatusOpen(false) }}>Clear</Button>}
+          <Button className="flex-1" disabled={!nsText.trim() || (!!nsMusic && !isAllowedMusic(nsMusic))} onClick={() => {
+            setC({ nowSmoking: { text: nsText.trim(), music: nsMusic.trim(), until: Date.now() + 6 * 3600_000 } })
+            toast('Status shared with your matches for 6 hours')
+            setStatusOpen(false)
+          }}>Share status</Button>
+        </div>
+      }>
+        <div className="space-y-4 pb-2">
+          <Field label="Now smoking" htmlFor="ns"><Input id="ns" value={nsText} maxLength={80} onChange={(e) => setNsText(e.target.value)} placeholder="Padrón 1964 Maduro on the patio" /></Field>
+          <Field label="Now playing" htmlFor="np" optional hint="Spotify, Apple Music, YouTube or SoundCloud link"><Input id="np" value={nsMusic} onChange={(e) => setNsMusic(e.target.value)} placeholder="https://open.spotify.com/…" /></Field>
+        </div>
+      </Sheet>
+      <Sheet open={trackOpen} onClose={() => setTrackOpen(false)} title="Smoking soundtrack" footer={
+        <Button block disabled={!!track && !isAllowedMusic(track)} onClick={() => { setC({ soundtrack: track.trim() }); setTrackOpen(false) }}>Save</Button>
+      }>
+        <Field label="Music link" htmlFor="st" hint="Spotify, Apple Music, YouTube Music, YouTube or SoundCloud"><Input id="st" value={track} onChange={(e) => setTrack(e.target.value)} placeholder="https://open.spotify.com/playlist/…" /></Field>
+        {track && isAllowedMusic(track) && <div className="mt-3 pb-2"><MusicCard url={track} /></div>}
+      </Sheet>
     </div>
   )
 }

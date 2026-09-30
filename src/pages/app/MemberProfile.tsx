@@ -1,5 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
-import { BadgeCheck, Briefcase, GraduationCap, Heart, Languages, Leaf, MapPin, Sparkles, Wine, Archive, X } from 'lucide-react'
+import { BadgeCheck, Briefcase, GraduationCap, Heart, Languages, Leaf, MapPin, Sparkles, Wine, Archive, X, BarChart3 } from 'lucide-react'
+import { ProgressBar } from '@/components/layout'
+import { useCommunity } from '@/features/community/store'
 import type { ReactNode } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Avatar, BandDivider, MatchRing, Portrait, UserTypeBadge } from '@/components/brand'
@@ -40,6 +42,7 @@ export default function MemberProfile() {
   const nav = useNavigate()
   const { state, set, toast } = useApp()
   const q = useQuery({ queryKey: ['member', id], queryFn: () => getMember(state, id) })
+  const { on } = useCommunity()
 
   if (q.isLoading)
     return (
@@ -119,6 +122,7 @@ export default function MemberProfile() {
             </p>
           )}
         </ProfileSection>
+        {on('match_insights') && <MatchInsights shared={shared} m={m} />}
         <ProfileSection icon={Leaf} title="Cigar Preferences">
           <ChipRow label="Strength" items={[m.prefs.strength]} shared={shared} />
           <ChipRow label="Wrappers" items={m.prefs.wrappers} shared={shared} />
@@ -165,5 +169,36 @@ export default function MemberProfile() {
         </div>
       </div>
     </div>
+  )
+}
+
+function MatchInsights({ shared, m }: { shared: Set<string>; m: import('@/types').ScoredMember }) {
+  const cats: [string, string[]][] = [
+    ['Flavor', m.prefs.flavors],
+    ['Wrapper & origin', [...m.prefs.wrappers, ...m.prefs.origins]],
+    ['Brands', m.prefs.brands],
+    ['Pairings', m.prefs.pairings],
+    ['Lifestyle', [...m.about.hobbies, ...m.about.sports, ...m.about.music]],
+    ['Social', [...m.prefs.socialStyle, ...m.prefs.venues]],
+  ]
+  return (
+    <ProfileSection icon={BarChart3} title="Why you match">
+      <div className="space-y-3">
+        {cats.map(([label, items]) => {
+          const hit = items.filter((i) => shared.has(i))
+          const pct = items.length ? Math.round((hit.length / items.length) * 100) : 0
+          return (
+            <div key={label}>
+              <div className="mb-1 flex justify-between text-[13px]">
+                <span className="font-medium">{label}</span>
+                <span className="text-ink-muted">{hit.length ? hit.slice(0, 3).join(', ') : 'Something new to explore'}</span>
+              </div>
+              <ProgressBar value={Math.max(4, pct)} label={`${label} overlap`} />
+            </div>
+          )
+        })}
+      </div>
+      <p className="mt-3 text-xs text-ink-muted">Based on your preferences and interests. Religion, politics and ethnicity are never used.</p>
+    </ProfileSection>
   )
 }

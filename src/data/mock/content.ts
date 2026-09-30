@@ -56,18 +56,24 @@ export const CONVERSATIONS: Conversation[] = [
   },
 ]
 
-// TODO(phase 7): replace with the 515 lounges from "US Cigar Lounges.xlsx". These are fictional.
+// TODO(phase 7): replace with the 515 lounges from "US Cigar Lounges.xlsx" (geocoded). These are fictional.
 export const LOUNGES: Lounge[] = [
-  { id: 'l1', name: 'The Ember Room', venueType: 'Lounge', street: '1450 SW 8th St', city: 'Miami', state: 'FL', zip: '33135', phone: '(305) 555-0142', metro: 'Miami', verificationNote: 'Phone verified', x: 34, y: 58, miles: 1.2 },
-  { id: 'l2', name: 'Brickell Leaf & Barrel', venueType: 'Lounge + Shop', street: '88 SW 7th St', city: 'Miami', state: 'FL', zip: '33130', phone: '(305) 555-0187', metro: 'Miami', verificationNote: 'Phone unverified', x: 52, y: 44, miles: 2.4 },
-  { id: 'l3', name: 'Havana Nights Social Club', venueType: 'Members club', street: '2100 Coral Way', city: 'Miami', state: 'FL', zip: '33145', phone: '(305) 555-0119', metro: 'Miami', verificationNote: 'Address verified', x: 24, y: 36, miles: 3.1 },
-  { id: 'l4', name: 'The Smoke Room', venueType: 'Shop + Lounge', street: '420 Collins Ave', city: 'Miami Beach', state: 'FL', zip: '33139', phone: '(305) 555-0164', metro: 'Miami', verificationNote: 'Phone unverified', x: 72, y: 30, miles: 4.8 },
-  { id: 'l5', name: 'Cedar & Oak Lounge', venueType: 'Lounge', street: '315 W Hubbard St', city: 'Chicago', state: 'IL', zip: '60654', phone: '(312) 555-0133', metro: 'Chicago', verificationNote: 'Phone verified', x: 62, y: 66, miles: 1187 },
-  { id: 'l6', name: 'Maduro Social', venueType: 'Lounge + Shop', street: '1901 E 6th St', city: 'Austin', state: 'TX', zip: '78702', phone: '(512) 555-0171', metro: 'Austin', verificationNote: 'Address unverified', x: 44, y: 74, miles: 1111 },
-  { id: 'l7', name: 'The Gilded Band', venueType: 'Members club', street: '700 Broadway', city: 'Nashville', state: 'TN', zip: '37203', phone: '(615) 555-0126', metro: 'Nashville', verificationNote: 'Phone verified', x: 80, y: 52, miles: 816 },
-  { id: 'l8', name: 'Leaf & Ledger', venueType: 'Shop + Lounge', street: '2525 Larimer St', city: 'Denver', state: 'CO', zip: '80205', phone: '(303) 555-0158', metro: 'Denver', verificationNote: 'Phone unverified', x: 16, y: 22, miles: 1720 },
-  { id: 'l9', name: 'Humidor House', venueType: 'Lounge', street: '11 Peachtree Pl', city: 'Atlanta', state: 'GA', zip: '30309', phone: '(404) 555-0190', metro: 'Atlanta', verificationNote: 'Phone verified', x: 58, y: 18, miles: 604 },
-  { id: 'l10', name: 'Pacific Ash Club', venueType: 'Lounge + Shop', street: '555 Fifth Ave', city: 'San Diego', state: 'CA', zip: '92101', phone: '(619) 555-0105', metro: 'San Diego', verificationNote: 'Address verified', x: 88, y: 80, miles: 2267 },
+  { id: 'l1', name: 'The Ember Room', venueType: 'Lounge', street: '1450 SW 8th St', city: 'Miami', state: 'FL', zip: '33135', phone: '(305) 555-0142', metro: 'Miami', verificationNote: 'Phone verified', lat: 25.7655, lng: -80.2168 },
+  { id: 'l2', name: 'Brickell Leaf & Barrel', venueType: 'Lounge + Shop', street: '88 SW 7th St', city: 'Miami', state: 'FL', zip: '33130', phone: '(305) 555-0187', metro: 'Miami', verificationNote: 'Phone unverified', lat: 25.7664, lng: -80.1953 },
+  { id: 'l3', name: 'Havana Nights Social Club', venueType: 'Members club', street: '2100 Coral Way', city: 'Miami', state: 'FL', zip: '33145', phone: '(305) 555-0119', metro: 'Miami', verificationNote: 'Address verified', lat: 25.7506, lng: -80.2289 },
+  { id: 'l4', name: 'The Smoke Room', venueType: 'Shop + Lounge', street: '420 Collins Ave', city: 'Miami Beach', state: 'FL', zip: '33139', phone: '(305) 555-0164', metro: 'Miami', verificationNote: 'Phone unverified', lat: 25.7738, lng: -80.1318 },
+  { id: 'l5', name: 'Wynwood Wrapper Co.', venueType: 'Lounge', street: '250 NW 24th St', city: 'Miami', state: 'FL', zip: '33127', phone: '(305) 555-0177', metro: 'Miami', verificationNote: 'Phone verified', lat: 25.8, lng: -80.199 },
+  { id: 'l6', name: 'Coconut Grove Cigar Patio', venueType: 'Lounge + Shop', street: '3015 Grand Ave', city: 'Miami', state: 'FL', zip: '33133', phone: '(305) 555-0103', metro: 'Miami', verificationNote: 'Address unverified', lat: 25.729, lng: -80.241 },
+  { id: 'l7', name: 'Cedar & Oak Lounge', venueType: 'Lounge', street: '315 W Hubbard St', city: 'Chicago', state: 'IL', zip: '60654', phone: '(312) 555-0133', metro: 'Chicago', verificationNote: 'Phone verified', lat: 41.8899, lng: -87.636 },
+  { id: 'l8', name: 'The Lakeview Humidor', venueType: 'Shop + Lounge', street: '3200 N Clark St', city: 'Chicago', state: 'IL', zip: '60657', phone: '(312) 555-0148', metro: 'Chicago', verificationNote: 'Phone unverified', lat: 41.9401, lng: -87.649 },
+  { id: 'l9', name: 'Maduro Social', venueType: 'Lounge + Shop', street: '1901 E 6th St', city: 'Austin', state: 'TX', zip: '78702', phone: '(512) 555-0171', metro: 'Austin', verificationNote: 'Address unverified', lat: 30.264, lng: -97.724 },
+  { id: 'l10', name: 'The Gilded Band', venueType: 'Members club', street: '700 Broadway', city: 'Nashville', state: 'TN', zip: '37203', phone: '(615) 555-0126', metro: 'Nashville', verificationNote: 'Phone verified', lat: 36.159, lng: -86.781 },
+  { id: 'l11', name: 'Leaf & Ledger', venueType: 'Shop + Lounge', street: '2525 Larimer St', city: 'Denver', state: 'CO', zip: '80205', phone: '(303) 555-0158', metro: 'Denver', verificationNote: 'Phone unverified', lat: 39.759, lng: -104.984 },
+  { id: 'l12', name: 'Humidor House', venueType: 'Lounge', street: '11 Peachtree Pl', city: 'Atlanta', state: 'GA', zip: '30309', phone: '(404) 555-0190', metro: 'Atlanta', verificationNote: 'Phone verified', lat: 33.78, lng: -84.385 },
+  { id: 'l13', name: 'Pacific Ash Club', venueType: 'Lounge + Shop', street: '555 Fifth Ave', city: 'San Diego', state: 'CA', zip: '92101', phone: '(619) 555-0105', metro: 'San Diego', verificationNote: 'Address verified', lat: 32.711, lng: -117.16 },
+  { id: 'l14', name: 'Bayou Smoke Society', venueType: 'Members club', street: '1200 Westheimer Rd', city: 'Houston', state: 'TX', zip: '77006', phone: '(713) 555-0122', metro: 'Houston', verificationNote: 'Phone unverified', lat: 29.744, lng: -95.393 },
+  { id: 'l15', name: 'Midtown Cigar Library', venueType: 'Lounge', street: '44 W 55th St', city: 'New York', state: 'NY', zip: '10019', phone: '(212) 555-0161', metro: 'New York', verificationNote: 'Phone verified', lat: 40.762, lng: -73.977 },
+  { id: 'l16', name: 'The Tobacco Exchange', venueType: 'Shop + Lounge', street: '910 Ocean Dr', city: 'Fort Lauderdale', state: 'FL', zip: '33316', phone: '(954) 555-0139', metro: 'Miami', verificationNote: 'Address unverified', lat: 26.108, lng: -80.105 },
 ]
 
 export const SESSIONS: VideoSession[] = [

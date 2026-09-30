@@ -21,7 +21,12 @@ const GROUPS: [string, [string, string][]][] = [
     ['Stogie Ethics (full)', '/legal/ethics'], ['Indemnification', '/legal/indemnification'], ['Refer a Friend', '/settings/refer'],
     ['Export / delete account', '/settings/delete'],
   ]],
-  ['Other', [['Admin panel', '/admin'], ['Empty, loading & error states', '/states']]],
+  ['Community module (Phase 10, feature-flagged)', [
+    ['Lounge Feed (posts, polls, Smoke Reports)', '/discover?view=feed'], ['Events & Meetups', '/events'], ['Event detail', '/events/e1'],
+    ['Cigar Journal', '/journal'], ['Notifications', '/notifications'], ['Pairing Finder', '/pairing'], ['Nearby Map', '/nearby'],
+    ['Cigar Passport', '/passport'], ['Travel Mode', '/travel'], ['Safe Meet Spot + Icebreakers (chat)', '/messages/m9'],
+  ]],
+  ['Other', [['Admin panel (incl. feature flags)', '/admin'], ['Empty, loading & error states', '/states']]],
 ]
 
 export default function Screens() {

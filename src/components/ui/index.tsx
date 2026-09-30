@@ -105,7 +105,7 @@ export function Badge({
     <span
       className={cn(
         'inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-semibold',
-        tone === 'gold' && 'bg-gradient-to-b from-gold-light to-gold text-on-gold',
+        tone === 'gold' && 'border border-gold/35 bg-gold/15 text-gold-ink',
         tone === 'success' && 'bg-success/15 text-success',
         tone === 'danger' && 'bg-danger/12 text-danger',
         tone === 'warning' && 'bg-warning/15 text-warning',

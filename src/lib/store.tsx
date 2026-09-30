@@ -47,7 +47,7 @@ export interface AppState {
 }
 
 const DEFAULT_STATE: AppState = {
-  theme: 'system',
+  theme: 'light',
   signedIn: false,
   dob: null,
   verifyStatus: 'Not Started',
@@ -125,7 +125,7 @@ interface Ctx {
 }
 
 const AppCtx = createContext<Ctx | null>(null)
-const KEY = 'daily-stogie:v1'
+const KEY = 'daily-stogie:v2'
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AppState>(() => load(KEY, DEFAULT_STATE))

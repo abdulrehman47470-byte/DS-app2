@@ -1,4 +1,7 @@
-import { AlertTriangle, ArrowLeft, BookOpen, Check, FileClock, Flag, ImageIcon, PlayCircle, Search, Users, X } from 'lucide-react'
+import { AlertTriangle, ArrowLeft, BookOpen, Check, FileClock, Flag, ImageIcon, Newspaper, PlayCircle, Search, ToggleRight, Users, X } from 'lucide-react'
+import { Toggle } from '@/components/ui'
+import { FLAGS } from '@/features/community/flags'
+import { useCommunity } from '@/features/community/store'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Avatar, LogoMark, Portrait } from '@/components/brand'
@@ -8,13 +11,15 @@ import { MEMBERS } from '@/data/mock/members'
 import { cn } from '@/lib/cn'
 import { useApp } from '@/lib/store'
 
-type Tab = 'photos' | 'reports' | 'users' | 'sessions' | 'blog' | 'audit'
+type Tab = 'photos' | 'reports' | 'community' | 'users' | 'sessions' | 'blog' | 'flags' | 'audit'
 const TABS: { id: Tab; label: string; icon: typeof Flag }[] = [
   { id: 'photos', label: 'Photo review', icon: ImageIcon },
   { id: 'reports', label: 'Reports', icon: Flag },
+  { id: 'community', label: 'Community queue', icon: Newspaper },
   { id: 'users', label: 'Users', icon: Users },
   { id: 'sessions', label: 'Sessions', icon: PlayCircle },
   { id: 'blog', label: 'Blog', icon: BookOpen },
+  { id: 'flags', label: 'Feature flags', icon: ToggleRight },
   { id: 'audit', label: 'Audit log', icon: FileClock },
 ]
 
@@ -26,6 +31,13 @@ const REPORTS = [
 
 export default function Admin() {
   const { toast } = useApp()
+  const { c, setC } = useCommunity()
+  const [queueItems, setQueueItems] = useState([
+    { id: 'q1', kind: 'Post', who: 'Tom Hadley', text: 'Selling a box of 20, $15 each, DM me', reason: 'Auto-filter: selling tobacco' },
+    { id: 'q2', kind: 'Comment', who: 'Chris Evers', text: 'That lounge is a dump, the owner is an idiot', reason: 'Reported: harassment' },
+    { id: 'q3', kind: 'Video', who: 'Daniel Ortega', text: 'Uploaded clip, 28s', reason: 'Reported: inappropriate' },
+    { id: 'q4', kind: 'Event', who: 'Nadia Karim', text: 'After-party at my place', reason: 'Private residence venue' },
+  ])
   const [tab, setTab] = useState<Tab>('photos')
   const [queue, setQueue] = useState(MEMBERS.slice(0, 6))
   const [reports, setReports] = useState(REPORTS)
@@ -115,6 +127,62 @@ export default function Admin() {
                   </div>
                 ))}
               </div>
+            </section>
+          )}
+
+          {tab === 'community' && (
+            <section>
+              <h2 className="font-serif text-2xl">Community moderation</h2>
+              <p className="mb-4 text-sm text-ink-muted">Reported or auto-flagged posts, comments, videos and events, plus new members’ first posts.</p>
+              <div className="space-y-3">
+                {[...c.posts.filter((p) => p.pendingReview).map((p) => ({ id: p.id, kind: 'First post', who: 'Jordan Hale', text: p.text || p.smoke?.brand || '(media)', reason: 'New member review' })), ...queueItems].map((q) => (
+                  <div key={q.id} className="card flex flex-wrap items-center gap-4 p-4">
+                    <div className="min-w-48 flex-1">
+                      <p className="flex items-center gap-2 font-semibold">{q.who} <Badge tone="muted">{q.kind}</Badge></p>
+                      <p className="mt-1 text-sm">“{q.text}”</p>
+                      <p className="text-xs text-warning">{q.reason}</p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <Button size="sm" variant="secondary" onClick={() => {
+                        setC((s) => ({ posts: s.posts.map((p) => (p.id === q.id ? { ...p, pendingReview: false } : p)) }))
+                        setQueueItems((x) => x.filter((i) => i.id !== q.id))
+                        log(`Approved ${q.kind.toLowerCase()} by ${q.who}`)
+                      }}>Approve</Button>
+                      {(['Remove', 'Warn', 'Suspend', 'Ban'] as const).map((a) => (
+                        <Button key={a} size="sm" variant={a === 'Remove' || a === 'Ban' ? 'danger' : 'secondary'} onClick={() => {
+                          if (a === 'Remove') setC((s) => ({ posts: s.posts.filter((p) => p.id !== q.id) }))
+                          setQueueItems((x) => x.filter((i) => i.id !== q.id))
+                          log(`${a}: ${q.kind.toLowerCase()} by ${q.who}`)
+                        }}>{a}</Button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {tab === 'flags' && (
+            <section>
+              <h2 className="font-serif text-2xl">Feature flags</h2>
+              <p className="mb-4 max-w-2xl text-sm text-ink-muted">
+                The Community module is an optional extra, not in the client’s brief. In production every flag defaults to OFF until the client approves it in writing. With all flags off, the app matches the client spec exactly.
+              </p>
+              <div className="mb-3 flex gap-2">
+                <Button size="sm" variant="secondary" onClick={() => { setC({ flags: Object.fromEntries(FLAGS.map((f) => [f.key, true])) as typeof c.flags }); log('Turned on all community flags') }}>All on</Button>
+                <Button size="sm" variant="secondary" onClick={() => { setC({ flags: Object.fromEntries(FLAGS.map((f) => [f.key, false])) as typeof c.flags }); log('Turned off all community flags') }}>All off (client spec)</Button>
+              </div>
+              <ul className="card divide-y divide-line">
+                {FLAGS.map((f) => (
+                  <li key={f.key} className="flex items-center gap-4 px-4 py-3">
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold">{f.label} <code className="ml-1 text-xs font-normal text-ink-muted">{f.key}</code></p>
+                      <p className="text-xs text-ink-muted">{f.desc}</p>
+                    </div>
+                    <Toggle label={f.label} checked={!!c.flags[f.key]} onChange={(v) => { setC((s) => ({ flags: { ...s.flags, [f.key]: v } })); log(`${v ? 'Enabled' : 'Disabled'} ${f.key}`) }} />
+                  </li>
+                ))}
+              </ul>
             </section>
           )}
 

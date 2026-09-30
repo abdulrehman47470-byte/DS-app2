@@ -1,10 +1,14 @@
 import { useQuery } from '@tanstack/react-query'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Ban, Check, CheckCheck, ChevronLeft, Flag, Lock, MoreVertical, SendHorizontal } from 'lucide-react'
+import { Ban, Check, CheckCheck, ChevronLeft, Flag, Lock, MapPin, MoreVertical, SendHorizontal, Sparkles, Store } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { Avatar, SafetyBanner } from '@/components/brand'
-import { Button, EmptyState, ErrorState, ListSkeleton } from '@/components/ui'
+import { LoungeMap, milesBetween } from '@/components/LoungeMap'
+import { Button, Chip, EmptyState, ErrorState, ListSkeleton, Sheet } from '@/components/ui'
+import { LOUNGES } from '@/data/mock/content'
+import { useCommunity } from '@/features/community/store'
+import { scoreMember } from '@/lib/api'
 import { BlockSheet, ReportSheet } from '@/features/safety'
 import { getConversation, memberById } from '@/lib/api'
 import { cn } from '@/lib/cn'
@@ -12,6 +16,12 @@ import { useApp } from '@/lib/store'
 import type { Message } from '@/types'
 
 const MAX_LEN = 1000 // TODO(phase 5): app_config
+
+// Approximate city centers; Phase 7 uses geocoded ZIPs. Never exact addresses.
+const CITY: Record<string, [number, number]> = {
+  Miami: [25.7617, -80.1918], Austin: [30.2672, -97.7431], Chicago: [41.8781, -87.6298], 'San Diego': [32.7157, -117.1611],
+  Denver: [39.7392, -104.9903], Nashville: [36.1627, -86.7816], Houston: [29.7604, -95.3698], Atlanta: [33.749, -84.388],
+}
 
 const now = () => new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
 
@@ -27,6 +37,9 @@ export default function Chat() {
   const [menu, setMenu] = useState(false)
   const [report, setReport] = useState(false)
   const [block, setBlock] = useState(false)
+  const [meetOpen, setMeetOpen] = useState(false)
+  const [pick, setPick] = useState<string | null>(null)
+  const { on } = useCommunity()
   const endRef = useRef<HTMLDivElement>(null)
   const messages = [...(q.data?.messages ?? []), ...local]
   const matched = state.matched.includes(id)
@@ -37,20 +50,38 @@ export default function Chat() {
 
   if (!m) return <ErrorState />
 
-  const send = () => {
-    const t = text.trim()
+  const meA = CITY[state.demographics.city] ?? CITY.Miami
+  const meB = CITY[m.city] ?? meA
+  const mid: [number, number] = [(meA[0] + meB[0]) / 2, (meA[1] + meB[1]) / 2]
+  const spots = LOUNGES.map((l) => ({ ...l, fromMid: milesBetween(mid, [l.lat, l.lng]), fromYou: milesBetween(meA, [l.lat, l.lng]), fromThem: milesBetween(meB, [l.lat, l.lng]) }))
+    .sort((a, b) => a.fromMid - b.fromMid)
+    .slice(0, 3)
+
+  const scored = scoreMember(state, m)
+  const myPour = Array.isArray(state.prefs.pairings) ? state.prefs.pairings[0] : 'bourbon'
+  const icebreakers = [
+    `What do you usually pour with a ${scored.prefs.strength.toLowerCase()} cigar? I lean ${myPour}.`,
+    scored.prefs.brands[0] && `Your ${scored.prefs.brands[0]} pick caught my eye. Which line is your favorite?`,
+    scored.prefs.lounge[0] && `Any ${scored.prefs.lounge[0].toLowerCase()} you would recommend around ${m.city}?`,
+    scored.shared[0] && `Looks like we both like ${scored.shared[0]}. What got you into it?`,
+  ].filter(Boolean) as string[]
+
+  const send = (override?: string, loungeId?: string) => {
+    const t = (override ?? text).trim()
     if (!t) return
-    const msg: Message = { id: String(Date.now()), from: 'me', text: t.slice(0, MAX_LEN), at: now(), status: 'sent' }
+    const msg: Message = { id: String(Date.now()), from: 'me', text: t.slice(0, MAX_LEN), at: now(), status: 'sent', loungeId }
     setLocal((l) => [...l, msg]) // optimistic
-    setText('')
+    if (override === undefined) setText('')
     setTimeout(() => setLocal((l) => l.map((x) => (x.id === msg.id ? { ...x, status: 'delivered' } : x))), 600)
     // Mock reply so the flow feels alive in Phase 0.
     setTimeout(() => setTyping(true), 1200)
     setTimeout(() => {
       setTyping(false)
       setLocal((l) => [
-        ...l.map((x) => (x.from === 'me' ? { ...x, status: 'read' as const } : x)),
-        { id: String(Date.now()), from: 'them', text: 'Sounds great! Let’s plan for this weekend.', at: now() },
+        ...l.map((x) => (x.from === 'me' ? { ...x, status: 'read' as const, accepted: x.id === msg.id && !!loungeId ? true : x.accepted } : x)),
+        loungeId
+          ? { id: String(Date.now()), from: 'them', text: `Accepted! See you at ${LOUNGES.find((x) => x.id === loungeId)?.name}.`, at: now() }
+          : { id: String(Date.now()), from: 'them', text: 'Sounds great! Let’s plan for this weekend.', at: now() },
       ])
     }, 3000)
   }
@@ -103,6 +134,14 @@ export default function Chat() {
             <Avatar tone={m.tone} name={`${m.firstName} ${m.lastName}`} size={88} ring />
             <p className="mt-4 font-serif text-xl">You matched with {m.firstName}</p>
             <p className="mt-1 text-sm text-ink-muted">Break the ice. Ask about their go-to pairing.</p>
+            {on('icebreakers') && icebreakers.length > 0 && (
+              <div className="mt-5 w-full space-y-2 text-left">
+                <p className="micro-label flex items-center gap-1.5"><Sparkles size={12} className="text-gold-deep" /> Icebreakers</p>
+                {icebreakers.map((ib) => (
+                  <button key={ib} onClick={() => setText(ib)} className="block w-full rounded-2xl border border-gold/40 bg-gold/8 px-3.5 py-2.5 text-left text-sm hover:border-gold">{ib}</button>
+                ))}
+              </div>
+            )}
           </div>
         ) : (
           <ul className="space-y-2">
@@ -127,6 +166,7 @@ export default function Chat() {
                       )}
                     >
                       {msg.text}
+                      {msg.loungeId && <LoungeCard id={msg.loungeId} accepted={msg.accepted} />}
                     </div>
                     <p className={cn('mt-1 flex items-center gap-1 px-1 text-[11px] text-ink-muted', mine && 'justify-end')}>
                       {msg.at}
@@ -161,6 +201,11 @@ export default function Chat() {
           }}
           className="flex items-end gap-2 border-t border-line bg-bg-elevated/95 px-3 pb-[max(12px,env(safe-area-inset-bottom))] pt-3"
         >
+          {on('safe_meet_spot') && (
+            <button type="button" onClick={() => setMeetOpen(true)} aria-label="Suggest a lounge to meet" className="grid size-11 shrink-0 place-items-center rounded-full border border-line text-gold-deep hover:bg-surface-2">
+              <MapPin size={19} />
+            </button>
+          )}
           <label className="sr-only" htmlFor="msg">Message</label>
           <textarea
             id="msg"
@@ -183,6 +228,42 @@ export default function Chat() {
         </form>
       )}
 
+      <Sheet
+        open={meetOpen}
+        onClose={() => setMeetOpen(false)}
+        title="Safe Meet Spot"
+        footer={
+          <Button
+            block
+            size="lg"
+            disabled={!pick}
+            onClick={() => {
+              const l = LOUNGES.find((x) => x.id === pick)!
+              send(`How about meeting at ${l.name}? It’s a licensed lounge roughly between us.`, l.id)
+              setMeetOpen(false)
+              setPick(null)
+            }}
+          >
+            Send suggestion
+          </Button>
+        }
+      >
+        <p className="mb-3 text-sm text-ink-muted">Licensed lounges roughly between you and {m.firstName}. Distances are approximate, and home addresses are never shared.</p>
+        <LoungeMap className="h-44" cluster={false} points={spots.map((l) => ({ id: l.id, lat: l.lat, lng: l.lng, label: l.name }))} selectedId={pick ?? undefined} onSelect={setPick} />
+        <div className="mt-3 space-y-2 pb-2">
+          {spots.map((l) => (
+            <button key={l.id} onClick={() => setPick(l.id)} className={cn('w-full rounded-2xl border p-3 text-left transition', pick === l.id ? 'border-gold bg-gold/12' : 'border-line bg-surface')}>
+              <p className="font-semibold">{l.name}</p>
+              <p className="text-xs text-ink-muted">{l.venueType} · {l.city}, {l.state}</p>
+              <div className="mt-1.5 flex flex-wrap gap-2">
+                <Chip size="sm">~{Math.round(l.fromYou)} mi from you</Chip>
+                <Chip size="sm">~{Math.round(l.fromThem)} mi from {m.firstName}</Chip>
+              </div>
+            </button>
+          ))}
+        </div>
+      </Sheet>
+
       <ReportSheet open={report} onClose={() => setReport(false)} name={m.firstName} />
       <BlockSheet
         open={block}
@@ -195,5 +276,20 @@ export default function Chat() {
         }}
       />
     </div>
+  )
+}
+
+function LoungeCard({ id, accepted }: { id: string; accepted?: boolean }) {
+  const l = LOUNGES.find((x) => x.id === id)
+  if (!l) return null
+  return (
+    <Link to={`/settings/search?lounge=${l.id}`} className="mt-2 flex items-center gap-2.5 rounded-xl bg-white/75 p-2.5 text-[#3b2a1e]">
+      <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-[#d69a4c]/25 text-[#9a6424]"><Store size={17} /></span>
+      <span className="min-w-0">
+        <span className="block truncate text-sm font-semibold">{l.name}</span>
+        <span className="block text-xs opacity-75">{l.venueType} · {l.city}, {l.state}</span>
+      </span>
+      {accepted && <span className="ml-auto text-xs font-semibold text-[#2f7a51]">Accepted</span>}
+    </Link>
   )
 }
