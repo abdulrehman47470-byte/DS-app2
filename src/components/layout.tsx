@@ -53,20 +53,13 @@ export function AuthLayout() {
   const loc = useLocation()
   return (
     <Column>
-      <AnimatePresence mode="wait" initial={false}>
-        <motion.div
-          key={loc.pathname}
-          className="flex flex-1 flex-col"
-          initial={{ opacity: 0, x: 16 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -16 }}
-          transition={{ duration: 0.14, ease: 'easeOut' }}
-        >
-          <Suspense fallback={<LoadingScreen />}>
-            <Outlet />
-          </Suspense>
-        </motion.div>
-      </AnimatePresence>
+      {/* CSS slide-in on each screen. It never starts from invisible, so a screen whose code
+          arrives late can't get stuck blank (the old JS fade did on slow networks). */}
+      <div key={loc.pathname} className="page-enter flex flex-1 flex-col">
+        <Suspense fallback={<LoadingScreen />}>
+          <Outlet />
+        </Suspense>
+      </div>
     </Column>
   )
 }

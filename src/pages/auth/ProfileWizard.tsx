@@ -1,4 +1,3 @@
-import { AnimatePresence, motion } from 'framer-motion'
 import { EyeOff, Lock, Search } from 'lucide-react'
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
@@ -58,21 +57,11 @@ export default function ProfileWizard({ edit }: { edit?: boolean }) {
         <h1 className="font-serif text-[28px] leading-tight">{TITLES[step - 1]}</h1>
       </div>
 
-      <AnimatePresence mode="wait" custom={dir}>
-        <motion.div
-          key={step}
-          custom={dir}
-          initial={{ opacity: 0, x: dir * 40 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: dir * -40 }}
-          transition={{ duration: 0.25 }}
-          className="flex-1 px-6 pb-4 pt-5"
-        >
-          {step === 1 && <StepDemographics />}
-          {step === 2 && <StepPreferences />}
-          {step === 3 && <StepAbout />}
-        </motion.div>
-      </AnimatePresence>
+      <div key={step} className={cn('flex-1 px-6 pb-4 pt-5', dir > 0 ? 'page-enter' : 'page-enter-back')}>
+        {step === 1 && <StepDemographics />}
+        {step === 2 && <StepPreferences />}
+        {step === 3 && <StepAbout />}
+      </div>
 
       <div className="sticky bottom-0 z-20 flex gap-3 border-t border-line bg-bg/90 px-6 pb-[max(16px,env(safe-area-inset-bottom))] pt-3 backdrop-blur-md">
         {step > 1 && (

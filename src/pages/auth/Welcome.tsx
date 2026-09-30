@@ -53,7 +53,7 @@ export default function Welcome() {
       <div className="relative flex flex-1 flex-col px-6 pb-[max(28px,env(safe-area-inset-bottom))] pt-[max(56px,env(safe-area-inset-top))]">
         <motion.div
           className="flex flex-col items-center text-center"
-          initial={{ opacity: 0.001, y: 10 }}
+          initial={{ opacity: 0.35, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35, ease: 'easeOut' }}
         >
@@ -66,7 +66,7 @@ export default function Welcome() {
 
         <motion.div
           className="space-y-3"
-          initial={{ opacity: 0.001, y: 14 }}
+          initial={{ opacity: 0.35, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35, delay: 0.08 }}
         >

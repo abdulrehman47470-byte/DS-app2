@@ -325,3 +325,25 @@ body {
   color: var(--ink) !important;
   border-color: var(--line) !important;
 }
+
+/* ---------- Screen transitions ----------
+   Pure CSS and never from fully invisible: if the animation can't run (slow device,
+   reduced motion, late-loading code) the screen still shows. */
+@keyframes page-in {
+  from {
+    opacity: 0.35;
+    transform: translateX(14px);
+  }
+}
+@keyframes page-in-back {
+  from {
+    opacity: 0.35;
+    transform: translateX(-14px);
+  }
+}
+.page-enter {
+  animation: page-in 0.18s ease-out;
+}
+.page-enter-back {
+  animation: page-in-back 0.18s ease-out;
+}
