@@ -5,6 +5,7 @@ import { AgeNote, LogoMark } from '@/components/brand'
 import { Button, Field, Input, TopBar } from '@/components/ui'
 import { GoogleG, GoogleSignIn, type MockGoogleAccount } from '@/features/auth/GoogleSignIn'
 import { useApp } from '@/lib/store'
+import { keyboardProps } from '@/lib/forms'
 
 export default function SignIn({ mode }: { mode: 'login' | 'signup' }) {
   const nav = useNavigate()
@@ -67,12 +68,14 @@ export default function SignIn({ mode }: { mode: 'login' | 'signup' }) {
             <Mail size={16} strokeWidth={1.6} className="text-gold-deep" /> {signup ? 'Sign up' : 'Sign in'} with email
           </p>
           <Field label="Email address" htmlFor="email">
-            <Input id="email" type="email" autoComplete="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} />
+            <Input id="email" type="email" autoComplete="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} {...keyboardProps('email')} />
           </Field>
           <Field label="Password" htmlFor="password" error={error}>
             <div className="relative">
               <Input
                 id="password"
+                {...keyboardProps('password', true)}
+                enterKeyHint="go"
                 type={show ? 'text' : 'password'}
                 autoComplete={signup ? 'new-password' : 'current-password'}
                 placeholder="At least 8 characters"

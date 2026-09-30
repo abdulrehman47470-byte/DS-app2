@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { LogoMark } from '@/components/brand'
 import { GoogleG } from '@/features/auth/GoogleSignIn'
 import { cn } from '@/lib/cn'
+import { keyboardProps } from '@/lib/forms'
 
 /**
  * DEMO checkout (mock payment). Looks and behaves like a real hosted checkout, but nothing is
@@ -189,14 +190,14 @@ export function Checkout({
 
                   <label className="block">
                     <span className="mb-1 block text-[13px] font-medium">Email</span>
-                    <input className={cn(input, 'rounded-[10px] border border-[#e0e0e6]')} type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" autoComplete="email" />
+                    <input className={cn(input, 'rounded-[10px] border border-[#e0e0e6]')} type="email" {...keyboardProps('email')} value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" autoComplete="email" />
                   </label>
 
                   <div>
                     <span className="mb-1 block text-[13px] font-medium">Card information</span>
                     <div className="overflow-hidden rounded-[10px] border border-[#e0e0e6] bg-white">
                       <div className="relative border-b border-[#e0e0e6]">
-                        <input className={cn(input, 'pr-24')} inputMode="numeric" autoComplete="cc-number" aria-label="Card number" placeholder="1234 1234 1234 1234" value={card} onChange={(e) => setCard(formatCard(e.target.value))} />
+                        <input className={cn(input, 'pr-24')} {...keyboardProps('number')} autoComplete="cc-number" aria-label="Card number" placeholder="1234 1234 1234 1234" value={card} onChange={(e) => setCard(formatCard(e.target.value))} />
                         <span className="pointer-events-none absolute right-3 top-1/2 z-20 flex -translate-y-1/2 items-center gap-1 text-[11px] font-bold">
                           {brand ? <span className="rounded bg-[#f0f0f5] px-1.5 py-0.5 text-[#30313d]">{brand}</span> : (
                             <><span className="rounded bg-[#1a1f71] px-1 text-white">VISA</span><span className="rounded bg-[#eb001b] px-1 text-white">MC</span><span className="rounded bg-[#2e77bc] px-1 text-white">AMEX</span></>
@@ -204,9 +205,9 @@ export function Checkout({
                         </span>
                       </div>
                       <div className="grid grid-cols-2">
-                        <input className={cn(input, 'border-r border-[#e0e0e6]')} inputMode="numeric" autoComplete="cc-exp" aria-label="Expiry date" placeholder="MM / YY" value={exp} onChange={(e) => setExp(formatExpiry(e.target.value))} />
+                        <input className={cn(input, 'border-r border-[#e0e0e6]')} {...keyboardProps('number')} autoComplete="cc-exp" aria-label="Expiry date" placeholder="MM / YY" value={exp} onChange={(e) => setExp(formatExpiry(e.target.value))} />
                         <div className="relative">
-                          <input className={cn(input, 'pr-10')} inputMode="numeric" autoComplete="cc-csc" aria-label="CVC" placeholder="CVC" value={cvc} onChange={(e) => setCvc(e.target.value.replace(/\D/g, '').slice(0, 4))} />
+                          <input className={cn(input, 'pr-10')} {...keyboardProps('number')} autoComplete="cc-csc" aria-label="CVC" placeholder="CVC" value={cvc} onChange={(e) => setCvc(e.target.value.replace(/\D/g, '').slice(0, 4))} />
                           <CreditCard size={18} className="pointer-events-none absolute right-3 top-1/2 z-20 -translate-y-1/2 text-[#8c8f99]" />
                         </div>
                       </div>
@@ -215,7 +216,7 @@ export function Checkout({
 
                   <label className="block">
                     <span className="mb-1 block text-[13px] font-medium">Name on card</span>
-                    <input className={cn(input, 'rounded-[10px] border border-[#e0e0e6]')} autoComplete="cc-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Full name" />
+                    <input className={cn(input, 'rounded-[10px] border border-[#e0e0e6]')} {...keyboardProps('name')} autoComplete="cc-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Full name" />
                   </label>
 
                   <div>
@@ -224,7 +225,7 @@ export function Checkout({
                       <select className={cn(input, 'border-b border-[#e0e0e6]')} aria-label="Country" value={country} onChange={(e) => setCountry(e.target.value)}>
                         {COUNTRIES.map((c) => <option key={c}>{c}</option>)}
                       </select>
-                      <input className={input} autoComplete="postal-code" aria-label="ZIP" placeholder="ZIP" value={zip} onChange={(e) => setZip(e.target.value.slice(0, 10))} />
+                      <input className={input} {...keyboardProps('zip', true)} autoComplete="postal-code" aria-label="ZIP" placeholder="ZIP" value={zip} onChange={(e) => setZip(e.target.value.slice(0, 10))} />
                     </div>
                   </div>
 

@@ -5,6 +5,8 @@
     <link rel="icon" type="image/png" href="/favicon-64.png" />
     <link rel="preload" as="image" href="/logo-256.webp" type="image/webp" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <!-- Android Chrome: resize the page (not overlay it) when the keyboard opens. Safari doesn't support the key, so it's added only on Android. -->
+    <script>/Android/i.test(navigator.userAgent)&&document.querySelector('meta[name=viewport]').setAttribute('content','width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content')</script>
     <meta name="theme-color" content="#F6F0E7" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="preconnect" href="https://tile.openstreetmap.org" crossorigin />

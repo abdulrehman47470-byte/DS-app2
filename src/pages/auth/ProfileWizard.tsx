@@ -17,6 +17,7 @@ import {
 import { Collapsible, MultiEntry, OptionGroupView, RangeSlider, StrengthScale, WheelPicker } from '@/features/profile/controls'
 import { ageFromDob } from '@/lib/age'
 import { cn } from '@/lib/cn'
+import { keyboardProps } from '@/lib/forms'
 import { useApp, type Demographics } from '@/lib/store'
 
 const BIO_MAX = 500 // TODO(phase 3): read from app_config
@@ -88,7 +89,7 @@ function StepDemographics() {
   return (
     <div className="space-y-5">
       <Field label="Full name" htmlFor="name" hint="Prefilled from sign-up. Only your first name shows on cards.">
-        <Input id="name" value={d.name} onChange={(e) => upd({ name: e.target.value })} autoComplete="name" />
+        <Input id="name" value={d.name} onChange={(e) => upd({ name: e.target.value })} autoComplete="name" {...keyboardProps('name')} />
       </Field>
       {/* TODO(client): should the age scroller be editable, or only show the age computed from DOB? */}
       <Field label="Age" hint={state.dob ? `Computed from your date of birth: ${computedAge}` : 'Minimum age is 21'}>
@@ -126,16 +127,16 @@ function StepDemographics() {
               {states.map((c) => <option key={c}>{c}</option>)}
             </Select>
           ) : (
-            <Input id="state" value={d.state} onChange={(e) => upd({ state: e.target.value })} placeholder="Region" />
+            <Input id="state" value={d.state} onChange={(e) => upd({ state: e.target.value })} placeholder="Region" {...keyboardProps('city')} />
           )}
         </Field>
       </div>
       <div className="grid grid-cols-[1.4fr_1fr] gap-3">
         <Field label="City" htmlFor="city">
-          <Input id="city" value={d.city} onChange={(e) => upd({ city: e.target.value })} autoComplete="address-level2" />
+          <Input id="city" value={d.city} onChange={(e) => upd({ city: e.target.value })} autoComplete="address-level2" {...keyboardProps('city')} />
         </Field>
         <Field label="ZIP code" htmlFor="zip" error={zipOk ? undefined : 'Use 5 digits'}>
-          <Input id="zip" inputMode="numeric" value={d.zip} onChange={(e) => upd({ zip: e.target.value })} autoComplete="postal-code" />
+          <Input id="zip" value={d.zip} onChange={(e) => upd({ zip: e.target.value })} autoComplete="postal-code" {...keyboardProps('zip')} />
         </Field>
       </div>
 
@@ -170,12 +171,12 @@ function StepDemographics() {
         <Textarea id="bio" maxLength={BIO_MAX} value={d.bio} onChange={(e) => upd({ bio: e.target.value })} placeholder="What do you love about cigars? What are you looking for here?" />
       </Field>
       <Field label="Website" htmlFor="website" optional>
-        <Input id="website" type="url" value={d.website} onChange={(e) => upd({ website: e.target.value })} placeholder="https://" />
+        <Input id="website" type="url" value={d.website} onChange={(e) => upd({ website: e.target.value })} placeholder="https://" {...keyboardProps('url')} />
       </Field>
       <div className="space-y-3">
         <p className="text-[13px] font-medium">Social media <span className="font-normal text-ink-muted">(optional)</span></p>
         {(['instagram', 'facebook', 'linkedin'] as const).map((k) => (
-          <Input key={k} aria-label={k} value={d[k]} onChange={(e) => upd({ [k]: e.target.value })} placeholder={k === 'instagram' ? 'Instagram @handle' : k === 'facebook' ? 'Facebook profile URL' : 'LinkedIn profile URL'} />
+          <Input key={k} aria-label={k} {...keyboardProps('handle', k === 'linkedin')} value={d[k]} onChange={(e) => upd({ [k]: e.target.value })} placeholder={k === 'instagram' ? 'Instagram @handle' : k === 'facebook' ? 'Facebook profile URL' : 'LinkedIn profile URL'} />
         ))}
       </div>
     </div>

@@ -171,17 +171,18 @@ export function Select({
   className,
   children,
   placeholder,
+  compact,
   ...rest
-}: SelectHTMLAttributes<HTMLSelectElement> & { placeholder?: string }) {
+}: SelectHTMLAttributes<HTMLSelectElement> & { placeholder?: string; compact?: boolean }) {
   return (
     <div className="relative">
-      <select className={cn(controlCls, 'appearance-none pr-10', className)} {...rest}>
+      <select className={cn(controlCls, 'appearance-none pr-10', compact && 'pl-2.5 pr-7', className)} {...rest}>
         {placeholder && <option value="">{placeholder}</option>}
         {children}
       </select>
       <ChevronDown
         size={18}
-        className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-ink-muted"
+        className={cn('pointer-events-none absolute top-1/2 -translate-y-1/2 text-ink-muted', compact ? 'right-2' : 'right-3')}
         aria-hidden
       />
     </div>

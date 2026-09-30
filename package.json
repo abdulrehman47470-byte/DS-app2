@@ -15,7 +15,8 @@
     "perf": "node scripts/perf.mjs",
     "test:mobile": "node scripts/mobile.mjs",
     "test:slow": "node scripts/slow-network.mjs",
-    "test:smooth": "node scripts/smooth.mjs"
+    "test:smooth": "node scripts/smooth.mjs",
+    "test:forms": "node scripts/forms.mjs"
   },
   "dependencies": {
     "@fontsource/inter": "^5.3.0",

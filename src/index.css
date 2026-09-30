@@ -435,3 +435,20 @@ label {
 html {
   -webkit-text-size-adjust: 100%;
 }
+
+/* ---------- Mobile forms ----------
+   iPhone Safari zooms into any input under 16px on focus (page jumps, stays zoomed).
+   On touch screens every field is at least 16px; desktop keeps the design sizes. */
+@media (pointer: coarse) {
+  input,
+  textarea,
+  select {
+    font-size: max(16px, 1em) !important;
+  }
+}
+/* Keep the focused field clear of the sticky header and the bottom Next bar. */
+input,
+textarea,
+select {
+  scroll-margin-block: 96px 140px;
+}

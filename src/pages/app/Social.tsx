@@ -44,12 +44,12 @@ export function Mentors() {
           ))}
         </div>
         <div className="mt-2 grid grid-cols-2 gap-2">
-          <Select aria-label="Location" value={loc} onChange={(e) => setLoc(e.target.value)} className="min-h-10 text-sm" placeholder="Any location">
+          <Select compact aria-label="Location" value={loc} onChange={(e) => setLoc(e.target.value)} className="min-h-10 text-sm" placeholder="Any location">
             {locations.map((l) => <option key={l}>{l}</option>)}
           </Select>
-          <Select aria-label="Sort" value={sort} onChange={(e) => setSort(e.target.value)} className="min-h-10 text-sm">
-            <option value="match">Sort: Best match</option>
-            <option value="exp">Sort: Most experience</option>
+          <Select compact aria-label="Sort" value={sort} onChange={(e) => setSort(e.target.value)} className="min-h-10 text-sm">
+            <option value="match">Best match</option>
+            <option value="exp">Most experience</option>
           </Select>
         </div>
         <p className="mt-2 text-xs text-ink-muted">

@@ -53,17 +53,17 @@ export function AgeVerification() {
           <legend className="sr-only">Date of birth</legend>
           <p className="mb-3 text-[13px] font-medium">Date of Birth</p>
           <div className="grid grid-cols-[1.1fr_0.9fr_1.2fr] gap-2">
-            <Select aria-label="Month" value={m} onChange={(e) => setM(e.target.value)} placeholder="Month">
+            <Select compact aria-label="Month" value={m} onChange={(e) => setM(e.target.value)} placeholder="Month">
               {MONTHS.map((mo, i) => (
                 <option key={mo} value={i}>{mo}</option>
               ))}
             </Select>
-            <Select aria-label="Day" value={d} onChange={(e) => setD(e.target.value)} placeholder="Day">
+            <Select compact aria-label="Day" value={d} onChange={(e) => setD(e.target.value)} placeholder="Day">
               {Array.from({ length: 31 }, (_, i) => (
                 <option key={i} value={i + 1}>{i + 1}</option>
               ))}
             </Select>
-            <Select aria-label="Year" value={y} onChange={(e) => setY(e.target.value)} placeholder="Year">
+            <Select compact aria-label="Year" value={y} onChange={(e) => setY(e.target.value)} placeholder="Year">
               {Array.from({ length: 100 }, (_, i) => thisYear - 18 - i).map((yr) => (
                 <option key={yr} value={yr}>{yr}</option>
               ))}
